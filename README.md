@@ -1,12 +1,10 @@
-## Portal Verifikasi Sertifikat – Backend (Laravel)
+## Portal Verifikasi Sertifikat – Laravel
 
-Backend aplikasi untuk **Portal Verifikasi Sertifikat Indo Bismar**. Proyek ini menyediakan:
+Aplikasi full **Laravel** untuk **Portal Verifikasi Sertifikat Indo Bismar**. Seluruh tampilan publik dan panel admin menggunakan Blade + Tailwind. Proyek ini menyediakan:
 
 - Halaman publik landing & form verifikasi sertifikat.
 - Panel admin untuk mengelola sertifikat, template sertifikat, dan laporan.
 - Fitur generate PDF sertifikat berdasarkan template.
-
-Proyek ini hanya mencakup **backend Laravel** (`laravelback`). Frontend Next.js berada di folder terpisah (`frontend/`).
 
 ---
 
