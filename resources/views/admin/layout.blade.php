@@ -11,7 +11,7 @@
       {{-- Sidebar kiri --}}
       <aside class="hidden md:flex md:flex-col w-64 bg-white border-r border-gray-200">
         <div class="flex items-center gap-3 px-5 h-16 border-b border-gray-200 bg-red-600 text-white">
-          <img src="/images/logo.png" alt="Logo" class="w-9 h-9 object-contain">
+          <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-9 h-9 object-contain">
           <div class="leading-tight">
             <p class="text-xs text-red-100">Portal Verifikasi Sertifikat</p>
             <p class="font-semibold text-sm">Admin Panel</p>

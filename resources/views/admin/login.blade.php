@@ -10,7 +10,7 @@
     <div class="w-full max-w-md">
       <div class="bg-white rounded-2xl shadow-xl border border-red-100 p-6 md:p-8">
         <div class="flex items-center justify-center gap-2 mb-6">
-          <img src="/images/logo.png" alt="Logo" class="w-10 h-10 object-contain">
+          <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-10 h-10 object-contain">
           <div>
             <p class="text-xs text-gray-500">Portal Verifikasi Sertifikat</p>
             <h1 class="text-lg md:text-xl font-extrabold text-gray-900">Login Admin</h1>

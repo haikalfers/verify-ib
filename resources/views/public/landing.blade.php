@@ -22,7 +22,7 @@
     <header class="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-red-600 via-red-600 to-red-500 text-white shadow">
       <div class="max-w-6xl mx-auto flex items-center justify-between px-4 h-16">
         <div class="flex items-center gap-3">
-          <img src="/images/logo.png" alt="Logo" class="w-10 h-10 object-contain">
+          <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-10 h-10 object-contain">
           <span class="font-bold text-lg">Verifikasi Sertifikat</span>
         </div>
         <nav class="hidden md:flex items-center gap-6 text-sm font-medium">
@@ -58,7 +58,7 @@
           </div>
 
           <div class="flex justify-center md:justify-end mt-8 md:mt-0 animate-fade-in" style="animation-delay: 150ms">
-            <img src="/images/students.png" alt="Ilustrasi siswa" class="w-3/4 max-w-xs md:max-w-md md:w-full object-contain drop-shadow-2xl">
+            <img src="{{ asset('images/students.png') }}" alt="Ilustrasi siswa" class="w-3/4 max-w-xs md:max-w-md md:w-full object-contain drop-shadow-2xl">
           </div>
         </div>
       </section>
@@ -97,7 +97,7 @@
 
           <div class="grid gap-10 md:grid-cols-2 items-center">
             <div class="flex justify-center">
-              <img src="/images/graduate.png" alt="Ilustrasi verifikasi" class="max-w-sm w-full object-contain drop-shadow-xl">
+              <img src="{{ asset('images/graduate.png') }}" alt="Ilustrasi verifikasi" class="max-w-sm w-full object-contain drop-shadow-xl">
             </div>
             <div class="space-y-6">
               <div class="flex items-start gap-4">
@@ -146,7 +146,7 @@
             <div class="grid gap-8 md:grid-cols-3 text-sm mb-6">
               <div class="flex flex-col gap-3">
                 <div class="flex items-center gap-3">
-                  <img src="/images/logo.png" alt="Logo" class="w-12 h-12 object-contain">
+                  <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-12 h-12 object-contain">
                   <div>
                     <p class="font-semibold">Portal Verifikasi Sertifikat</p>
                     <p class="text-red-100">Indo Bismar</p>
