@@ -1,0 +1,36 @@
+/.phpunit.cache
+/.idea
+/.vscode
+/.phpunit.result.cache
+/node_modules
+/public/hot
+/public/storage
+/storage/*.key
+/vendor
+
+/.env
+/.env.*
+/.env.backup
+
+/storage/app/public
+/storage/framework/cache/data
+/storage/framework/sessions
+/storage/framework/testing
+/storage/framework/views
+/storage/logs
+
+# Laravel Horizon
+/app/Horizon
+
+# Laravel Telescope
+/storage/telescope
+
+# Custom uploads
+/public/uploads/templates
+/public/uploads/**
+
+# OS / editor junk
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
