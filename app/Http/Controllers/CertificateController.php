@@ -46,7 +46,7 @@ class CertificateController extends Controller
             }
 
             $relativePath = ltrim($certificate->generated_pdf_path, '/');
-            $fullPath = public_path($relativePath);
+            $fullPath = base_path($relativePath);
 
             if (! file_exists($fullPath)) {
                 return response()->json([

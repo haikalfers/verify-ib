@@ -22,7 +22,7 @@ class CertificatePdfService
                 return null;
             }
 
-            $templatePath = public_path(ltrim($template['file_path'], '/'));
+            $templatePath = base_path(ltrim($template['file_path'], '/'));
             if (!File::exists($templatePath)) {
                 Log::warning('Template file not found for PDF generation', [
                     'path' => $templatePath,
@@ -211,7 +211,7 @@ class CertificatePdfService
 
             $filename = sprintf('cert-%s-%s-%s.pdf', $safeNumber, $safeName, $timestamp);
 
-            $dir = public_path('uploads/certificates');
+            $dir = base_path('uploads/certificates');
             if (!File::exists($dir)) {
                 File::makeDirectory($dir, 0775, true);
             }

@@ -26,8 +26,12 @@
 /storage/telescope
 
 # Custom uploads
-/public/uploads/templates
-/public/uploads/**
+/public/index.php
+/public/uploads/*
+!/public/uploads/.gitignore
+!/public/uploads/templates/.gitignore
+!/public/uploads/certificates/.gitignore
+
 
 # OS / editor junk
 Thumbs.db

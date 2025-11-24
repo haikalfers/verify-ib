@@ -103,7 +103,7 @@ class TemplateController extends Controller
                 ], 400);
             }
 
-            $uploadDir = public_path('uploads/templates');
+            $uploadDir = base_path('uploads/templates');
             if (! File::exists($uploadDir)) {
                 File::makeDirectory($uploadDir, 0775, true);
             }
@@ -202,7 +202,7 @@ class TemplateController extends Controller
 
                 // delete old file
                 if ($existing->file_path) {
-                    $oldPath = public_path(ltrim($existing->file_path, '/'));
+                    $oldPath = base_path(ltrim($existing->file_path, '/'));
                     File::delete($oldPath);
                 }
 
@@ -279,7 +279,7 @@ class TemplateController extends Controller
             }
 
             if ($existing->file_path) {
-                $filePath = public_path(ltrim($existing->file_path, '/'));
+                $filePath = base_path(ltrim($existing->file_path, '/'));
                 File::delete($filePath);
             }
 
