@@ -46,9 +46,32 @@ class CertificateController extends Controller
             }
 
             $relativePath = ltrim($certificate->generated_pdf_path, '/');
-            $fullPath = base_path($relativePath);
 
-            if (! file_exists($fullPath)) {
+            // Coba beberapa kemungkinan lokasi file untuk kompatibilitas
+            $candidates = [];
+
+            // Jika path sudah relatif terhadap root project (mis. uploads/certificates/xxx.pdf)
+            $candidates[] = base_path($relativePath);
+
+            // Jika ada file lama yang mungkin masih berada di public
+            $candidates[] = public_path($relativePath);
+
+            // Jika path yang tersimpan mengandung prefix public/, coba hilangkan
+            if (str_starts_with($relativePath, 'public/')) {
+                $trimmed = substr($relativePath, strlen('public/'));
+                $candidates[] = base_path($trimmed);
+                $candidates[] = public_path($trimmed);
+            }
+
+            $fullPath = null;
+            foreach ($candidates as $path) {
+                if ($path && file_exists($path)) {
+                    $fullPath = $path;
+                    break;
+                }
+            }
+
+            if (! $fullPath) {
                 return response()->json([
                     'message' => 'File sertifikat tidak tersedia di server',
                 ], 404);

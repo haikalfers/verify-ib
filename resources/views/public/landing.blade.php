@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Verifikasi Sertifikat - PT Indo Bismar</title>
+    <link rel="icon" type="image/png" href="/images/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
       @keyframes fade-in-up {

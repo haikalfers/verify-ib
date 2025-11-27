@@ -59,9 +59,20 @@ class AdminCertificateController extends Controller
             'place_of_issue'   => ['required', 'string', 'max:255'],
             'issued_date'      => ['required', 'date'],
             'certificate_title'=> ['required', 'string', 'max:255'],
+            'internship_start_date' => ['nullable', 'date'],
+            'internship_end_date'   => ['nullable', 'date'],
         ]);
 
         try {
+            $categoryName = $data['category'] ?? '';
+
+            if (trim($categoryName) === 'Sertifikat PKL/Magang' && !empty($data['internship_start_date']) && !empty($data['internship_end_date'])) {
+                $data['certificate_title'] = $this->buildInternshipPeriodTitle(
+                    $data['internship_start_date'],
+                    $data['internship_end_date']
+                );
+            }
+
             $apiController = new CertificateController();
 
             $payload = [
@@ -127,7 +138,18 @@ class AdminCertificateController extends Controller
             'date_of_birth'    => ['nullable', 'date'],
             'issued_date'      => ['nullable', 'date'],
             'place_of_issue'   => ['nullable', 'string', 'max:255'],
+            'internship_start_date' => ['nullable', 'date'],
+            'internship_end_date'   => ['nullable', 'date'],
         ]);
+
+        $categoryName = $data['category'] ?? '';
+
+        if (trim($categoryName) === 'Sertifikat PKL/Magang' && !empty($data['internship_start_date']) && !empty($data['internship_end_date'])) {
+            $data['certificate_title'] = $this->buildInternshipPeriodTitle(
+                $data['internship_start_date'],
+                $data['internship_end_date']
+            );
+        }
 
         DB::table('certificates')->where('id', $id)->update([
             'name'               => $data['name'],
@@ -142,6 +164,47 @@ class AdminCertificateController extends Controller
         ]);
 
         return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil diperbarui');
+    }
+
+    protected function buildInternshipPeriodTitle(string $startDate, string $endDate): string
+    {
+        try {
+            $bulanIndo = [
+                1 => 'Januari',
+                2 => 'Februari',
+                3 => 'Maret',
+                4 => 'April',
+                5 => 'Mei',
+                6 => 'Juni',
+                7 => 'Juli',
+                8 => 'Agustus',
+                9 => 'September',
+                10 => 'Oktober',
+                11 => 'November',
+                12 => 'Desember',
+            ];
+
+            $start = new \DateTime($startDate);
+            $end   = new \DateTime($endDate);
+
+            $startStr = sprintf(
+                '%02d %s %04d',
+                (int) $start->format('d'),
+                $bulanIndo[(int) $start->format('n')] ?? $start->format('m'),
+                (int) $start->format('Y')
+            );
+
+            $endStr = sprintf(
+                '%02d %s %04d',
+                (int) $end->format('d'),
+                $bulanIndo[(int) $end->format('n')] ?? $end->format('m'),
+                (int) $end->format('Y')
+            );
+
+            return $startStr . ' - ' . $endStr;
+        } catch (\Throwable $e) {
+            return $startDate . ' - ' . $endDate;
+        }
     }
 
     public function destroy($id)

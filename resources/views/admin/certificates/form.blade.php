@@ -92,6 +92,17 @@
         </div>
       </div>
 
+      <div id="internship-period-fields" class="grid md:grid-cols-2 gap-4 hidden">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Mulai Magang *</label>
+          <input type="date" name="internship_start_date" value="{{ old('internship_start_date') }}" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500">
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Tanggal Selesai Magang *</label>
+          <input type="date" name="internship_end_date" value="{{ old('internship_end_date') }}" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500">
+        </div>
+      </div>
+
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-1">Bidang Kompetensi</label>
         <input type="text" name="competency_field" value="{{ old('competency_field', $certificate->competency_field ?? '') }}" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="Contoh: Web Development, Keamanan Jaringan">
@@ -120,4 +131,71 @@
       </div>
     </form>
   </div>
+  <script>
+    (function () {
+      const CATEGORY_MAGANG = 'Sertifikat PKL/Magang';
+
+      const categorySelect = document.querySelector('select[name="category"]');
+      const periodContainer = document.getElementById('internship-period-fields');
+      const startInput = document.querySelector('input[name="internship_start_date"]');
+      const endInput = document.querySelector('input[name="internship_end_date"]');
+      const titleInput = document.querySelector('input[name="certificate_title"]');
+
+      if (!categorySelect || !periodContainer || !startInput || !endInput || !titleInput) {
+        return;
+      }
+
+      const bulanIndo = [
+        'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      ];
+
+      function formatDateIndo(value) {
+        if (!value) return '';
+        const d = new Date(value);
+        if (Number.isNaN(d.getTime())) return '';
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = bulanIndo[d.getMonth()] || '';
+        const year = d.getFullYear();
+        return month ? `${day} ${month} ${year}` : '';
+      }
+
+      function updateVisibility() {
+        const isMagang = (categorySelect.value || '').trim() === CATEGORY_MAGANG;
+        if (isMagang) {
+          periodContainer.classList.remove('hidden');
+        } else {
+          periodContainer.classList.add('hidden');
+        }
+      }
+
+      function updateTitleFromDates() {
+        const isMagang = (categorySelect.value || '').trim() === CATEGORY_MAGANG;
+        if (!isMagang) return;
+
+        const start = formatDateIndo(startInput.value);
+        const end = formatDateIndo(endInput.value);
+
+        if (start && end) {
+          titleInput.value = `${start} - ${end}`;
+        }
+      }
+
+      categorySelect.addEventListener('change', function () {
+        updateVisibility();
+        updateTitleFromDates();
+      });
+
+      startInput.addEventListener('change', updateTitleFromDates);
+      endInput.addEventListener('change', updateTitleFromDates);
+
+      document.addEventListener('DOMContentLoaded', function () {
+        updateVisibility();
+        updateTitleFromDates();
+      });
+
+      updateVisibility();
+      updateTitleFromDates();
+    })();
+  </script>
 @endsection

@@ -22,10 +22,26 @@ class CertificatePdfService
                 return null;
             }
 
-            $templatePath = base_path(ltrim($template['file_path'], '/'));
-            if (!File::exists($templatePath)) {
+            $relativePath = ltrim($template['file_path'], '/');
+
+            // Coba cari di lokasi baru (root uploads) dan lokasi lama (public/uploads) untuk kompatibilitas
+            $candidatePaths = [
+                base_path($relativePath),
+                public_path($relativePath),
+            ];
+
+            $templatePath = null;
+            foreach ($candidatePaths as $path) {
+                if (File::exists($path)) {
+                    $templatePath = $path;
+                    break;
+                }
+            }
+
+            if (!$templatePath) {
                 Log::warning('Template file not found for PDF generation', [
-                    'path' => $templatePath,
+                    'candidates' => $candidatePaths,
+                    'file_path'  => $template['file_path'],
                 ]);
                 return null;
             }
@@ -130,8 +146,8 @@ class CertificatePdfService
                 ],
                 // Kode verifikasi - dekat bawah kanan, abu-abu
                 'verify_code' => [
-                    'x'        => 168,
-                    'y'        => 270,
+                    'x'        => 166.5,
+                    'y'        => 271,
                     'size'     => 10,
                     'centered' => false,
                     'color'    => ['r' => 0.3, 'g' => 0.3, 'b' => 0.3],
