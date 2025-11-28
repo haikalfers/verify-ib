@@ -45,7 +45,7 @@
           <div class="bg-gray-50 rounded-xl border border-gray-200 px-3 py-3 flex items-center gap-3 text-xs">
             <div class="h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center text-xs font-semibold">N</div>
             <div class="flex-1">
-              <p class="font-medium text-gray-800 truncate">admin@example.com</p>
+              <p class="font-medium text-gray-800 truncate">{{ session('admin_user.email', 'admin@example.com') }}</p>
               <p class="text-[11px] text-gray-500">Administrator</p>
             </div>
           </div>

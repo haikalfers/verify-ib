@@ -6,6 +6,8 @@
     <title>Verifikasi Sertifikat - PT Indo Bismar</title>
     <link rel="icon" type="image/png" href="/images/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('css/footer.css') }}">
     <style>
       @keyframes fade-in-up {
         from { opacity: 0; transform: translateY(16px); }
@@ -127,75 +129,74 @@
         </div>
       </section>
 
-      {{-- CTA + FOOTER --}}
-      <section id="kontak" class="text-white">
-        {{-- Gradient CTA strip --}}
-        <div class="bg-gradient-to-r from-red-500 via-red-500 to-red-400">
-          <div class="max-w-6xl mx-auto px-4 py-10 md:py-12 text-center">
-            <h2 class="text-2xl md:text-3xl font-bold mb-2">Siap Memulai?</h2>
-            <p class="text-sm md:text-base text-red-100 mb-6">Verifikasi keaslian Sertifikat Anda hanya dengan sekali klik.</p>
-            <a href="{{ route('public.verify.form') }}" class="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-red-600 text-white font-semibold shadow-lg hover:bg-red-700">
-              <span>🚀</span>
-              <span>Mulai Verifikasi</span>
-            </a>
-          </div>
-        </div>
-
-        {{-- Solid red footer block --}}
-        <div class="bg-red-600 border-t border-red-500">
-          <div class="max-w-6xl mx-auto px-4 py-10 md:py-12">
-            <div class="grid gap-8 md:grid-cols-3 text-sm mb-6">
-              <div class="flex flex-col gap-3">
-                <div class="flex items-center gap-3">
-                  <img src="{{ asset('images/logo.png') }}" alt="Logo" class="w-12 h-12 object-contain">
-                  <div>
-                    <p class="font-semibold">Portal Verifikasi Sertifikat</p>
-                    <p class="text-red-100">Indo Bismar</p>
-                  </div>
-                </div>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-2">USEFUL LINKS</h3>
-                <ul class="space-y-1 text-red-100">
+      {{-- FOOTER BARU --}}
+      <footer class="footer" id="footer">
+        <div class="container">
+          <div class="footer-container">
+            <div class="footer-column">
+              <img src="{{ asset('images/logo.png') }}" alt="Indo Bismar Logo">
+              <h4>IndoBismar <span>Group</span></h4>
+              <p>
+                Jl. Bendul Merisi Selatan XI No.59-61, Bendul Merisi, Kec.
+                Wonocolo, Surabaya, Jawa Timur 60239.
+              </p>
+              <br />
+            </div>
+            <div class="footer-column">
+              <h4>Useful Link</h4>
+              <ul>
+                <li><a href="#home">Home</a></li>
+                <li><a href="#about">About</a></li>
+                <li><a href="#founder">Founder</a></li>
+                <li><a href="#products">Product</a></li>
+                <li><a href="#section-store">Store</a></li>
+                <li><a href="#contact">Contact</a></li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Contact us</h4>
+              <ul>
+                <li>
+                  <a href="https://www.instagram.com/indobismar.store?utm_source=ig_web_button_share_sheet&igsh=c3c1b2tzNXc3am4="
+                    target="_blank"><i class="fab fa-instagram"></i> Instagram</a>
+                </li>
+                <li>
+                  <a href="https://www.tiktok.com/@indobismar.store?is_from_webapp=1&sender_device=pc"
+                    target="_blank"><i class="fab fa-tiktok"></i> Tik-Tok</a>
+                </li>
+                <li>
+                  <a href="https://www.youtube.com/@PTINDOBISMARGROUP" target="_blank"><i
+                      class="fab fa-youtube"></i> YouTube</a>
+                </li>
+                <li>
+                  <a href="https://www.linkedin.com/company/indobismar/?lipi=urn%3Ali%3Apage%3Ad_flagship3_search_srp_all%3BGO0CMm17TkqdFbnn2Ffbrg%3D%3D"
+                    target="_blank"><i class="fab fa-linkedin"></i> LinkedIn</a>
+                </li>
+                <li>
+                  <a href="https://wa.me/82335966079" target="_blank"><i class="fab fa-whatsapp"></i>
+                    WhatsApp</a>
+                </li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Location</h4>
+              <div class="footer-column-map">
+                <ul>
                   <li>
-                    <a href="/" class="hover:underline hover:text-red-50 transition">Home</a>
-                  </li>
-                  <li>
-                    <a href="/tentang" class="hover:underline hover:text-red-50 transition">About</a>
-                  </li>
-                  <li>
-                    <a href="/verifikasi" class="hover:underline hover:text-red-50 transition">Service</a>
-                  </li>
-                  <li>
-                    <a href="/kontak" class="hover:underline hover:text-red-50 transition">Team</a>
-                  </li>
-                </ul>
-              </div>
-              <div>
-                <h3 class="font-semibold mb-2">CONTACT US</h3>
-                <ul class="space-y-1 text-red-100">
-                  <li>
-                    <a href="https://www.instagram.com/indobismar/?hl=id" target="_blank" rel="noopener noreferrer" class="hover:text-red-50 transition">Instagram</a>
-                  </li>
-                  <li>
-                    <a href="https://www.youtube.com/@PTINDOBISMARGROUP" target="_blank" rel="noopener noreferrer" class="hover:text-red-50 transition">YouTube</a>
-                  </li>
-                  <li>
-                    <a href="https://www.tiktok.com/@indobismar.store" target="_blank" rel="noopener noreferrer" class="hover:text-red-50 transition">TikTok</a>
-                  </li>
-                  <li>
-                    <a href="https://wa.me/6285731166475" target="_blank" rel="noopener noreferrer" class="hover:text-red-50 transition">WhatsApp</a>
+                    <iframe
+                      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3957.3599341010695!2d112.74798849999999!3d-7.3134011999999995!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2dd7fb0f1fc7c151%3A0x879a96237dbe49f5!2sPT.%20Indo%20Bismar!5e0!3m2!1sid!2sid!4v1754551090913!5m2!1sid!2sid"
+                      width="600" height="450" style="border: 0" allowfullscreen="" loading="lazy"
+                      referrerpolicy="no-referrer-when-downgrade"></iframe>
                   </li>
                 </ul>
               </div>
             </div>
-
-            <div class="border-t border-red-500 pt-4 text-center text-xs text-red-100">
-              © 2025 Portal Verifikasi Sertifikat Indo Bismar. Semua hak cipta dilindungi.
-            </div>
+          </div>
+          <div class="copyright">
+            <p>&copy; 2025. All rights reserved by Indo Bismar Group</p>
           </div>
         </div>
-      </section>
+      </footer>
     </main>
   </body>
 </html>

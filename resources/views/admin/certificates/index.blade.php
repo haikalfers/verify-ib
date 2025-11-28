@@ -40,7 +40,7 @@
               <th class="px-3 py-2 font-medium text-gray-600">Judul Sertifikat</th>
               <th class="px-3 py-2 font-medium text-gray-600">Nomor Sertifikat</th>
               <th class="px-3 py-2 font-medium text-gray-600">Kode Verifikasi</th>
-              <th class="px-3 py-2 font-medium text-gray-600">Perusahaan</th>
+              <th class="px-3 py-2 font-medium text-gray-600">Institusi</th>
               <th class="px-3 py-2 font-medium text-gray-600 text-right">Aksi</th>
             </tr>
           </thead>

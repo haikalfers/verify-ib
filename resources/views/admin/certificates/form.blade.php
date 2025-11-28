@@ -109,8 +109,8 @@
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Judul Sertifikat *</label>
-        <input type="text" name="certificate_title" value="{{ old('certificate_title', $certificate->certificate_title ?? '') }}" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500" required>
+        <label id="certificate-title-label" class="block text-xs font-medium text-gray-700 mb-1">Judul Sertifikat *</label>
+        <input type="text" name="certificate_title" value="{{ old('certificate_title', $certificate->certificate_title ?? '') }}" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500" placeholder="Masukkan judul sertifikat" required>
       </div>
 
       <div class="rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 text-[11px] text-blue-800 space-y-1">
@@ -140,8 +140,9 @@
       const startInput = document.querySelector('input[name="internship_start_date"]');
       const endInput = document.querySelector('input[name="internship_end_date"]');
       const titleInput = document.querySelector('input[name="certificate_title"]');
+      const titleLabel = document.getElementById('certificate-title-label');
 
-      if (!categorySelect || !periodContainer || !startInput || !endInput || !titleInput) {
+      if (!categorySelect || !periodContainer || !startInput || !endInput || !titleInput || !titleLabel) {
         return;
       }
 
@@ -164,8 +165,16 @@
         const isMagang = (categorySelect.value || '').trim() === CATEGORY_MAGANG;
         if (isMagang) {
           periodContainer.classList.remove('hidden');
+          titleLabel.textContent = 'Tanggal Periode *';
+          if (!titleInput.placeholder) {
+            titleInput.placeholder = 'Contoh: 01 Januari 2025 - 30 Juni 2025';
+          }
         } else {
           periodContainer.classList.add('hidden');
+          titleLabel.textContent = 'Judul Sertifikat *';
+          if (titleInput.placeholder === 'Contoh: 01 Januari 2025 - 30 Juni 2025') {
+            titleInput.placeholder = 'Masukkan judul sertifikat';
+          }
         }
       }
 
