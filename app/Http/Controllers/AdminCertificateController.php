@@ -120,9 +120,22 @@ class AdminCertificateController extends Controller
             abort(404);
         }
 
+        // Ambil daftar kategori dan template seperti di halaman create
+        $categories = DB::table('categories')
+            ->select('id', 'name')
+            ->orderBy('name', 'asc')
+            ->get();
+
+        $templates = DB::table('certificate_templates')
+            ->where('is_active', 1)
+            ->orderBy('name', 'asc')
+            ->get();
+
         return view('admin.certificates.form', [
             'mode' => 'edit',
             'certificate' => $certificate,
+            'categories' => $categories,
+            'templates' => $templates,
         ]);
     }
 

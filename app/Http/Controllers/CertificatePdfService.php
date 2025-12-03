@@ -103,7 +103,7 @@ class CertificatePdfService
                     'centered' => true,
                     'color'    => ['r' => 0, 'g' => 0, 'b' => 0],
                 ],
-                // Nama - tengah halaman, lebih ke tengah, merah dan bold
+                // Nama - tengah halaman, lebih ke tengah, merah (tanpa bold agar sedikit lebih ringan)
                 'name' => [
                     'x'        => 105,
                     'y'        => 120,
@@ -204,8 +204,30 @@ class CertificatePdfService
             if (!empty($certificate['issued_date'])) {
                 try {
                     $dt = new \DateTime($certificate['issued_date']);
-                    // Simple Indonesian-like date without localization libs
-                    $formatted = $dt->format('d-m-Y');
+
+                    // Format tanggal dengan nama bulan Indonesia (contoh: 03 Desember 2025)
+                    $bulanIndo = [
+                        1  => 'Januari',
+                        2  => 'Februari',
+                        3  => 'Maret',
+                        4  => 'April',
+                        5  => 'Mei',
+                        6  => 'Juni',
+                        7  => 'Juli',
+                        8  => 'Agustus',
+                        9  => 'September',
+                        10 => 'Oktober',
+                        11 => 'November',
+                        12 => 'Desember',
+                    ];
+
+                    $day   = (int) $dt->format('d');
+                    $month = (int) $dt->format('m');
+                    $year  = $dt->format('Y');
+
+                    $namaBulan = $bulanIndo[$month] ?? $dt->format('F');
+                    $formatted = sprintf('%02d %s %s', $day, $namaBulan, $year);
+
                     $place = $certificate['place_of_issue'] ?? null;
                     $placeAndDate = $place ? ($place . ', ' . $formatted) : $formatted;
                     $drawText($placeAndDate, 'issued_date');

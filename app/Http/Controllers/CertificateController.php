@@ -143,31 +143,46 @@ class CertificateController extends Controller
     }
 
     /**
-     * Helper: generate certificate number NNN/{COMPANY}/MM-YYYY.
-     * Simplified version of Node implementation.
+     * Helper: generate certificate number dengan format NNN/C/IB/MMM/YYYY.
+     * Contoh: 001/C/IB/XII/2025
+     * - NNN : nomor urut 3 digit (per tahun terbit)
+     * - C   : huruf tetap
+     * - IB  : huruf tetap (tidak lagi memakai nama perusahaan di nomor)
+     * - MMM : bulan terbit dalam angka Romawi
+     * - YYYY: tahun terbit
      */
     public function generateCertificateNumber(string $companyName, string $issuedDate): string
     {
         $date = new \DateTime($issuedDate);
-        $month = $date->format('m');
-        $year  = $date->format('Y');
+        $monthNum = (int) $date->format('m');
+        $year     = $date->format('Y');
 
-        $companyTrim = preg_replace('/\s+/', ' ', $companyName);
-        $companyTrim = trim($companyTrim ?? '');
-        $companyForNumber = str_replace(['\\', '/'], '-', $companyTrim);
+        // Mapping bulan ke angka Romawi
+        $romanMonths = [
+            1  => 'I',
+            2  => 'II',
+            3  => 'III',
+            4  => 'IV',
+            5  => 'V',
+            6  => 'VI',
+            7  => 'VII',
+            8  => 'VIII',
+            9  => 'IX',
+            10 => 'X',
+            11 => 'XI',
+            12 => 'XII',
+        ];
 
-        $normKey = strtolower($companyTrim);
-        $normKey = str_replace(['.', '-', ' ', '/', '\\'], '', $normKey);
+        $romanMonth = $romanMonths[$monthNum] ?? 'I';
 
         try {
+            // Cari nomor urut terbesar untuk tahun tersebut (4 digit terakhir)
             $row = DB::selectOne(<<<SQL
                 SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(certificate_number, '/', 1) AS UNSIGNED)), 0) AS max_number
                 FROM certificates
-                WHERE certificate_number REGEXP '^[0-9]{3}/'
-                  AND REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(LOWER(
-                    SUBSTRING_INDEX(SUBSTRING_INDEX(certificate_number, '/', 2), '/', -1)
-                  ), '.', ''), '-', ''), ' ', ''), '/', ''), CHAR(92), '') = ?
-            SQL, [$normKey]);
+                WHERE certificate_number REGEXP '^[0-9]{3}/C/IB/[IVXLCDM]+/[0-9]{4}$'
+                  AND RIGHT(certificate_number, 4) = ?
+            SQL, [$year]);
 
             $maxNumber = $row ? (int) $row->max_number : 0;
         } catch (\Throwable $e) {
@@ -175,8 +190,10 @@ class CertificateController extends Controller
                 'error' => $e->getMessage(),
             ]);
 
-            $timestamp = substr((string) time(), -6);
-            return sprintf('%s/Perusahaan/%s-%s', $timestamp, $month, $year);
+            // Fallback: pakai 3 digit terakhir timestamp sebagai nomor urut
+            $fallbackNum = (int) substr((string) time(), -3);
+            $formattedFallback = str_pad((string) $fallbackNum, 3, '0', STR_PAD_LEFT);
+            return sprintf('%s/C/IB/%s/%s', $formattedFallback, $romanMonth, $year);
         }
 
         $next = $maxNumber + 1;
@@ -186,7 +203,8 @@ class CertificateController extends Controller
 
         $formatted = str_pad((string) $next, 3, '0', STR_PAD_LEFT);
 
-        return sprintf('%s/%s/%s-%s', $formatted, $companyForNumber, $month, $year);
+        // Bentuk akhir: 001/C/IB/XII/2025
+        return sprintf('%s/C/IB/%s/%s', $formatted, $romanMonth, $year);
     }
 
     /**
