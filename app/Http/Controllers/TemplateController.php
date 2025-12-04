@@ -172,7 +172,8 @@ class TemplateController extends Controller
             $filePath = $existing->file_path;
             $fileType = $existing->file_type;
 
-            $uploadDir = public_path('uploads/templates');
+            // Gunakan direktori yang sama dengan proses create: base_path('uploads/templates')
+            $uploadDir = base_path('uploads/templates');
             if ($request->hasFile('template_file')) {
                 $file = $request->file('template_file');
                 if (! $file->isValid()) {
@@ -200,7 +201,7 @@ class TemplateController extends Controller
                 $fileType = $ext === 'pdf' ? 'pdf' : 'image';
                 $newPath = '/uploads/templates/' . $filename;
 
-                // delete old file
+                // delete old file dari direktori yang sama
                 if ($existing->file_path) {
                     $oldPath = base_path(ltrim($existing->file_path, '/'));
                     File::delete($oldPath);

@@ -95,13 +95,14 @@ class CertificatePdfService
             // Defaults approximated from Node pdfGenerator.js (A4, pdf-lib points -> mm)
             // These match visual layout used sebelumnya.
             $defaults = [
-                // Nomor Sertifikat - tengah halaman, sekitar 30% dari atas
+                // Nomor Sertifikat - tengah halaman, sekitar 30% dari atas (abu-abu gelap)
                 'certificate_number' => [
                     'x'        => 105,
                     'y'        => 90,
                     'size'     => 15,
                     'centered' => true,
-                    'color'    => ['r' => 0, 'g' => 0, 'b' => 0],
+                    'semibold' => true,
+                    'color'    => ['r' => 0.1, 'g' => 0.1, 'b' => 0.1],
                 ],
                 // Nama - tengah halaman, lebih ke tengah, merah (tanpa bold agar sedikit lebih ringan)
                 'name' => [
@@ -110,7 +111,7 @@ class CertificatePdfService
                     'size'     => 40,
                     'centered' => true,
                     'bold'     => true,
-                    'color'    => ['r' => 139 / 255, 'g' => 0, 'b' => 0],
+                    'color'    => ['r' => 142 / 255, 'g' => 0, 'b' => 0],
                 ],
                 // Nama sekolah/perusahaan - sedikit di bawah nama, merah
                 'company_name' => [
@@ -136,13 +137,13 @@ class CertificatePdfService
                     'centered' => true,
                     'color'    => ['r' => 139 / 255, 'g' => 0, 'b' => 0],
                 ],
-                // Tempat & tanggal terbit - bagian bawah, center, hitam
+                // Tempat & tanggal terbit - bagian bawah, center, abu-abu gelap
                 'issued_date' => [
                     'x'        => 103,
                     'y'        => 223,
                     'size'     => 12,
                     'centered' => true,
-                    'color'    => ['r' => 0, 'g' => 0, 'b' => 0],
+                    'color'    => ['r' => 0.1, 'g' => 0.1, 'b' => 0.1],
                 ],
                 // Kode verifikasi - dekat bawah kanan, abu-abu
                 'verify_code' => [
@@ -174,9 +175,10 @@ class CertificatePdfService
                 $bold  = !empty($coord['bold']);
                 $color = $coord['color'] ?? ['r' => 0, 'g' => 0, 'b' => 0];
 
-                // Gunakan Arial khusus untuk nomor sertifikat & tanggal terbit, lainnya GeoSlab703
-                $arialFields = ['certificate_number', 'issued_date'];
+                // Gunakan Arial Narrow khusus untuk nomor sertifikat, tanggal terbit, & kode verifikasi; lainnya GeoSlab703
+                $arialFields = ['certificate_number', 'issued_date', 'verify_code'];
                 $family = in_array($field, $arialFields, true) ? 'Arial' : 'GeoSlab703';
+
 
                 $pdf->SetFont($family, $bold ? 'B' : '', $size);
                 $pdf->SetTextColor(

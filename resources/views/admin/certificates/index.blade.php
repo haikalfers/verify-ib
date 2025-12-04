@@ -18,9 +18,18 @@
           >
           <button type="submit" class="hidden md:inline-flex items-center px-3 py-1.5 rounded-lg bg-gray-100 text-xs font-medium text-gray-700 hover:bg-gray-200">Cari</button>
         </form>
-        <a href="{{ route('admin.certificates.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm font-semibold shadow-sm">
-          + Tambah Sertifikat
-        </a>
+        <div class="flex gap-2">
+          <a
+            href="{{ route('admin.certificates.import.form') }}"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-xs md:text-sm font-semibold shadow-sm"
+          >
+            <span>⬇️</span>
+            <span>Import CSV</span>
+          </a>
+          <a href="{{ route('admin.certificates.create') }}" class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs md:text-sm font-semibold shadow-sm">
+            + Tambah Sertifikat
+          </a>
+        </div>
       </div>
     </div>
 
@@ -30,13 +39,19 @@
       </div>
     @endif
 
+    @if ($errors->has('general'))
+      <div class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs md:text-sm text-red-800">
+        {{ $errors->first('general') }}
+      </div>
+    @endif
+
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
       <div class="overflow-x-auto">
         <table class="min-w-full text-left text-xs md:text-sm">
           <thead class="bg-gray-50 border-b border-gray-100">
             <tr>
               <th class="px-3 py-2 font-medium text-gray-600">No</th>
-              <th class="px-3 py-2 font-medium text-gray-600">Nama</th>
+                <th class="px-3 py-2 font-medium text-gray-600">Nama</th>
               <th class="px-3 py-2 font-medium text-gray-600">Judul Sertifikat</th>
               <th class="px-3 py-2 font-medium text-gray-600">Nomor Sertifikat</th>
               <th class="px-3 py-2 font-medium text-gray-600">Kode Verifikasi</th>
@@ -97,7 +112,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="7" class="px-3 py-6 text-center text-xs md:text-sm text-gray-500">
+                <td colspan="8" class="px-3 py-6 text-center text-xs md:text-sm text-gray-500">
                   Belum ada data sertifikat.
                 </td>
               </tr>
@@ -106,9 +121,23 @@
         </table>
       </div>
 
-      <div class="px-3 py-2 border-t border-gray-100">
-        {{ $certificates->links() }}
+      <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 gap-2">
+        <form method="POST" action="{{ route('admin.certificates.destroy-page') }}" onsubmit="return confirm('Hapus semua sertifikat di halaman ini?');">
+          @csrf
+          <input type="hidden" name="q" value="{{ $search ?? '' }}">
+          <input type="hidden" name="page" value="{{ $certificates->currentPage() }}">
+          <button
+            type="submit"
+            class="inline-flex items-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs md:text-sm hover:bg-red-50"
+          >
+            Hapus semua di halaman ini
+          </button>
+        </form>
+        <div>
+          {{ $certificates->links() }}
+        </div>
       </div>
     </div>
+
   </div>
-@endsection
+  @endsection

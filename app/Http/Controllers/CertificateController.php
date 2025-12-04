@@ -176,13 +176,15 @@ class CertificateController extends Controller
         $romanMonth = $romanMonths[$monthNum] ?? 'I';
 
         try {
-            // Cari nomor urut terbesar untuk tahun tersebut (4 digit terakhir)
+            // Cari nomor urut terbesar untuk kombinasi bulan (Romawi) dan tahun tersebut
+            // Format nomor: NNN/C/IB/MMM/YYYY
             $row = DB::selectOne(<<<SQL
                 SELECT COALESCE(MAX(CAST(SUBSTRING_INDEX(certificate_number, '/', 1) AS UNSIGNED)), 0) AS max_number
                 FROM certificates
                 WHERE certificate_number REGEXP '^[0-9]{3}/C/IB/[IVXLCDM]+/[0-9]{4}$'
                   AND RIGHT(certificate_number, 4) = ?
-            SQL, [$year]);
+                  AND SUBSTRING_INDEX(SUBSTRING_INDEX(certificate_number, '/', 4), '/', -1) = ?
+            SQL, [$year, $romanMonth]);
 
             $maxNumber = $row ? (int) $row->max_number : 0;
         } catch (\Throwable $e) {

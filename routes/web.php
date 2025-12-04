@@ -36,6 +36,9 @@ Route::middleware([\App\Http\Middleware\AdminWebMiddleware::class])->group(funct
     Route::get('/admin/certificates', [AdminCertificateController::class, 'index'])->name('admin.certificates.index');
     Route::get('/admin/certificates/create', [AdminCertificateController::class, 'create'])->name('admin.certificates.create');
     Route::post('/admin/certificates', [AdminCertificateController::class, 'store'])->name('admin.certificates.store');
+    Route::post('/admin/certificates/destroy-page', [AdminCertificateController::class, 'destroyPage'])->name('admin.certificates.destroy-page');
+    Route::get('/admin/certificates/import', [AdminCertificateController::class, 'importForm'])->name('admin.certificates.import.form');
+    Route::post('/admin/certificates/import', [AdminCertificateController::class, 'importProcess'])->name('admin.certificates.import.process');
     Route::get('/admin/certificates/{id}/edit', [AdminCertificateController::class, 'edit'])->name('admin.certificates.edit');
     Route::put('/admin/certificates/{id}', [AdminCertificateController::class, 'update'])->name('admin.certificates.update');
     Route::delete('/admin/certificates/{id}', [AdminCertificateController::class, 'destroy'])->name('admin.certificates.destroy');

@@ -26,6 +26,181 @@ class AdminCertificateController extends Controller
         return view('admin.certificates.index', compact('certificates', 'search'));
     }
 
+    public function importForm()
+    {
+        return view('admin.certificates.import');
+    }
+
+    public function importProcess(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:csv,txt'],
+        ]);
+
+        $file = $validated['file'];
+        $path = $file->getRealPath();
+
+        if (! $path || ! is_readable($path)) {
+            return back()->withErrors(['file' => 'File tidak dapat dibaca'])->withInput();
+        }
+
+        $handle = fopen($path, 'r');
+        if (! $handle) {
+            return back()->withErrors(['file' => 'Gagal membuka file'])->withInput();
+        }
+
+        // Gunakan delimiter ';' (format default banyak export Excel di lokal ID)
+        $delimiter = ';';
+        $headers = fgetcsv($handle, 0, $delimiter);
+        if (! $headers) {
+            fclose($handle);
+            return back()->withErrors(['file' => 'File CSV kosong atau header tidak terbaca'])->withInput();
+        }
+
+        $headers = array_map(function ($h) {
+            return strtolower(trim($h));
+        }, $headers);
+
+        $requiredHeaders = [
+            'company_name',
+            'template_name',
+            'name',
+            'place_of_birth',
+            'date_of_birth',
+            'category',
+            'competency_field',
+            'place_of_issue',
+            'issued_date',
+            'certificate_title',
+            'internship_start_date',
+            'internship_end_date',
+        ];
+
+        foreach (['company_name', 'template_name', 'name', 'place_of_birth', 'date_of_birth', 'category', 'place_of_issue', 'issued_date'] as $req) {
+            if (! in_array($req, $headers, true)) {
+                fclose($handle);
+                return back()->withErrors(['file' => "Header CSV wajib mengandung kolom: {$req}"])->withInput();
+            }
+        }
+
+        $results = [
+            'total'   => 0,
+            'success' => 0,
+            'failed'  => 0,
+            'errors'  => [],
+        ];
+
+        $line = 1; // sudah baca header
+        $apiController = new CertificateController();
+
+        while (($row = fgetcsv($handle, 0, $delimiter)) !== false) {
+            $line++;
+            if ($row === [null] || count(array_filter($row, fn($v) => $v !== null && $v !== '')) === 0) {
+                continue; // skip baris kosong
+            }
+
+            $results['total']++;
+
+            // Normalisasi panjang row terhadap header
+            if (count($row) < count($headers)) {
+                $results['failed']++;
+                $results['errors'][] = "Baris {$line}: jumlah kolom kurang dari header";
+                continue;
+            }
+
+            $assoc = [];
+            foreach ($headers as $idx => $name) {
+                $assoc[$name] = isset($row[$idx]) ? trim($row[$idx]) : null;
+            }
+
+            try {
+                $templateName = $assoc['template_name'] ?? '';
+                $template = DB::table('certificate_templates')
+                    ->where('name', $templateName)
+                    ->where('is_active', 1)
+                    ->first();
+
+                if (! $template) {
+                    $results['failed']++;
+                    $results['errors'][] = "Baris {$line}: template dengan nama '{$templateName}' tidak ditemukan atau tidak aktif";
+                    continue;
+                }
+
+                $category = $assoc['category'] ?? '';
+                $certificateTitle = $assoc['certificate_title'] ?? '';
+
+                if (trim($category) === 'Sertifikat PKL/Magang'
+                    && ! empty($assoc['internship_start_date'])
+                    && ! empty($assoc['internship_end_date'])) {
+                    $certificateTitle = $this->buildInternshipPeriodTitle(
+                        $assoc['internship_start_date'],
+                        $assoc['internship_end_date']
+                    );
+                }
+
+                $payload = [
+                    'company_name'     => $assoc['company_name'] ?? '',
+                    'template_id'      => $template->id,
+                    'name'             => $assoc['name'] ?? '',
+                    'place_of_birth'   => $assoc['place_of_birth'] ?? '',
+                    'date_of_birth'    => $this->normalizeDateInput($assoc['date_of_birth'] ?? null),
+                    'category'         => $category,
+                    'competency_field' => $assoc['competency_field'] ?? null,
+                    'place_of_issue'   => $assoc['place_of_issue'] ?? '',
+                    'issued_date'      => $this->normalizeDateInput($assoc['issued_date'] ?? null),
+                    'certificate_title'=> $certificateTitle,
+                    'internship_start_date' => $this->normalizeDateInput($assoc['internship_start_date'] ?? null),
+                    'internship_end_date'   => $this->normalizeDateInput($assoc['internship_end_date'] ?? null),
+                ];
+
+                $apiRequest = Request::create('/api/certificates', 'POST', $payload);
+                $response = $apiController->store($apiRequest);
+
+                if (method_exists($response, 'getStatusCode') && $response->getStatusCode() >= 400) {
+                    $json = method_exists($response, 'getData') ? (array) $response->getData(true) : [];
+                    $message = $json['message'] ?? $json['error'] ?? 'Gagal menambahkan sertifikat';
+
+                    $results['failed']++;
+                    $results['errors'][] = "Baris {$line}: {$message}";
+                    continue;
+                }
+
+                $results['success']++;
+            } catch (\Throwable $e) {
+                Log::error('Admin import certificate error', [
+                    'line'  => $line,
+                    'error' => $e->getMessage(),
+                ]);
+
+                $results['failed']++;
+                $results['errors'][] = "Baris {$line}: " . $e->getMessage();
+            }
+        }
+
+        fclose($handle);
+
+        return back()->with('import_result', $results);
+    }
+
+    protected function normalizeDateInput(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        // Coba format lokal umum: d/m/Y atau d-m-Y
+        foreach (['d/m/Y', 'd-m-Y', 'Y-m-d'] as $format) {
+            $dt = \DateTime::createFromFormat($format, $value);
+            if ($dt instanceof \DateTime) {
+                return $dt->format('Y-m-d');
+            }
+        }
+
+        // Jika gagal diparse, kembalikan apa adanya agar validator yang menangkap
+        return $value;
+    }
+
     public function create()
     {
         $categories = DB::table('categories')
@@ -225,5 +400,100 @@ class AdminCertificateController extends Controller
         DB::table('certificates')->where('id', $id)->delete();
 
         return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil dihapus');
+    }
+
+    public function destroyPage(Request $request)
+    {
+        $page = (int) $request->input('page', 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $perPage = 10; // harus sama dengan paginate(10) di index()
+
+        $query = DB::table('certificates')->orderByDesc('id');
+
+        if ($search = $request->input('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('certificate_number', 'like', "%{$search}%")
+                  ->orWhere('verify_code', 'like', "%{$search}%");
+            });
+        }
+
+        $ids = $query->forPage($page, $perPage)->pluck('id');
+
+        if ($ids->isEmpty()) {
+            return redirect()->route('admin.certificates.index', [
+                'q'    => $request->input('q'),
+                'page' => $page,
+            ])->withErrors(['general' => 'Tidak ada sertifikat di halaman ini untuk dihapus.']);
+        }
+
+        try {
+            $deleted = DB::table('certificates')->whereIn('id', $ids)->delete();
+
+            if ($deleted === 0) {
+                return redirect()->route('admin.certificates.index', [
+                    'q'    => $request->input('q'),
+                    'page' => $page,
+                ])->withErrors(['general' => 'Tidak ada sertifikat yang terhapus. Pastikan data masih ada dan coba lagi.']);
+            }
+
+            return redirect()->route('admin.certificates.index', [
+                'q'    => $request->input('q'),
+                'page' => $page,
+            ])->with('status', $deleted . ' sertifikat di halaman ini berhasil dihapus');
+        } catch (\Throwable $e) {
+            Log::error('Destroy page certificates error', [
+                'error' => $e->getMessage(),
+                'page'  => $page,
+                'q'     => $request->input('q'),
+            ]);
+
+            return redirect()->route('admin.certificates.index', [
+                'q'    => $request->input('q'),
+                'page' => $page,
+            ])->withErrors(['general' => 'Terjadi kesalahan saat menghapus sertifikat di halaman ini']);
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        if (!is_array($ids) || count($ids) === 0) {
+            return redirect()->route('admin.certificates.index')
+                ->withErrors(['general' => 'Pilih minimal satu sertifikat untuk dihapus']);
+        }
+
+        try {
+            // Pastikan ID berupa integer untuk menghindari masalah tipe data
+            $idInts = array_values(array_unique(array_map('intval', $ids)));
+
+            if (count($idInts) === 0) {
+                return redirect()->route('admin.certificates.index')
+                    ->withErrors(['general' => 'ID sertifikat tidak valid']);
+            }
+
+            $deleted = DB::table('certificates')->whereIn('id', $idInts)->delete();
+
+            if ($deleted === 0) {
+                return redirect()->route('admin.certificates.index')
+                    ->withErrors(['general' => 'Tidak ada sertifikat yang terhapus. Pastikan data masih ada dan coba lagi.']);
+            }
+
+            return redirect()->route('admin.certificates.index')
+                ->with('status', "{$deleted} sertifikat terpilih berhasil dihapus");
+        } catch (\Throwable $e) {
+            Log::error('Bulk destroy certificates error', [
+                'error' => $e->getMessage(),
+                'ids'   => $ids,
+            ]);
+
+            return redirect()->route('admin.certificates.index')
+                ->withErrors(['general' => 'Terjadi kesalahan saat menghapus sertifikat terpilih']);
+        }
     }
 }
