@@ -147,7 +147,60 @@
           </form>
         </div>
         <div>
-          {{ $certificates->links() }}
+          @if ($certificates->lastPage() > 1)
+            @php
+              $current = $certificates->currentPage();
+              $last = $certificates->lastPage();
+              $start = max(1, $current - 1);
+              $end = min($last, $current + 1);
+            @endphp
+
+            <nav class="inline-flex items-center gap-1 text-xs md:text-sm" aria-label="Pagination">
+              {{-- Previous --}}
+              @if ($certificates->onFirstPage())
+                <span class="px-2 py-1 rounded border border-gray-200 text-gray-400 cursor-not-allowed">&lt;</span>
+              @else
+                <a href="{{ $certificates->previousPageUrl() }}" class="px-2 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50">&lt;</a>
+              @endif
+
+              {{-- First page --}}
+              <a href="{{ $certificates->url(1) }}" class="px-2 py-1 rounded border {{ $current === 1 ? 'bg-red-600 text-white border-red-600' : 'border-gray-200 text-gray-700 hover:bg-gray-50' }}">1</a>
+
+              {{-- Ellipsis before window --}}
+              @if ($start > 2)
+                <span class="px-2 py-1 text-gray-400">...</span>
+              @endif
+
+              {{-- Window around current page --}}
+              @for ($page = $start; $page <= $end; $page++)
+                @if ($page !== 1 && $page !== $last)
+                  <a
+                    href="{{ $certificates->url($page) }}"
+                    class="px-2 py-1 rounded border {{ $current === $page ? 'bg-red-600 text-white border-red-600' : 'border-gray-200 text-gray-700 hover:bg-gray-50' }}"
+                  >
+                    {{ $page }}
+                  </a>
+                @endif
+              @endfor
+
+              {{-- Ellipsis after window --}}
+              @if ($end < $last - 1)
+                <span class="px-2 py-1 text-gray-400">...</span>
+              @endif
+
+              {{-- Last page --}}
+              @if ($last > 1)
+                <a href="{{ $certificates->url($last) }}" class="px-2 py-1 rounded border {{ $current === $last ? 'bg-red-600 text-white border-red-600' : 'border-gray-200 text-gray-700 hover:bg-gray-50' }}">{{ $last }}</a>
+              @endif
+
+              {{-- Next --}}
+              @if ($certificates->hasMorePages())
+                <a href="{{ $certificates->nextPageUrl() }}" class="px-2 py-1 rounded border border-gray-200 text-gray-700 hover:bg-gray-50">&gt;</a>
+              @else
+                <span class="px-2 py-1 rounded border border-gray-200 text-gray-400 cursor-not-allowed">&gt;</span>
+              @endif
+            </nav>
+          @endif
         </div>
       </div>
     </div>
