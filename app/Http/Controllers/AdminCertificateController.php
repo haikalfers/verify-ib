@@ -397,9 +397,25 @@ class AdminCertificateController extends Controller
 
     public function destroy($id)
     {
-        DB::table('certificates')->where('id', $id)->delete();
+        try {
+            $api = new CertificateController();
+            $deleted = $api->deleteCertificateWithFile((int) $id);
 
-        return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil dihapus');
+            if ($deleted === 0) {
+                return redirect()->route('admin.certificates.index')
+                    ->withErrors(['general' => 'Sertifikat tidak ditemukan atau sudah dihapus.']);
+            }
+
+            return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil dihapus');
+        } catch (\Throwable $e) {
+            Log::error('Admin destroy certificate error', [
+                'error' => $e->getMessage(),
+                'id'    => $id,
+            ]);
+
+            return redirect()->route('admin.certificates.index')
+                ->withErrors(['general' => 'Terjadi kesalahan saat menghapus sertifikat']);
+        }
     }
 
     public function destroyPage(Request $request)
@@ -432,9 +448,14 @@ class AdminCertificateController extends Controller
         }
 
         try {
-            $deleted = DB::table('certificates')->whereIn('id', $ids)->delete();
+            $api = new CertificateController();
+            $deletedTotal = 0;
 
-            if ($deleted === 0) {
+            foreach ($ids as $cid) {
+                $deletedTotal += $api->deleteCertificateWithFile((int) $cid);
+            }
+
+            if ($deletedTotal === 0) {
                 return redirect()->route('admin.certificates.index', [
                     'q'    => $request->input('q'),
                     'page' => $page,
@@ -444,7 +465,7 @@ class AdminCertificateController extends Controller
             return redirect()->route('admin.certificates.index', [
                 'q'    => $request->input('q'),
                 'page' => $page,
-            ])->with('status', $deleted . ' sertifikat di halaman ini berhasil dihapus');
+            ])->with('status', $deletedTotal . ' sertifikat di halaman ini berhasil dihapus');
         } catch (\Throwable $e) {
             Log::error('Destroy page certificates error', [
                 'error' => $e->getMessage(),
@@ -456,6 +477,124 @@ class AdminCertificateController extends Controller
                 'q'    => $request->input('q'),
                 'page' => $page,
             ])->withErrors(['general' => 'Terjadi kesalahan saat menghapus sertifikat di halaman ini']);
+        }
+    }
+
+    public function downloadPage(Request $request)
+    {
+        $page = (int) $request->input('page', 1);
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $perPage = 10; // harus sama dengan paginate(10) di index()
+
+        $query = DB::table('certificates')->orderByDesc('id');
+
+        if ($search = $request->input('q')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('certificate_number', 'like', "%{$search}%")
+                  ->orWhere('verify_code', 'like', "%{$search}%");
+            });
+        }
+
+        $certificates = $query->forPage($page, $perPage)->get();
+
+        if ($certificates->isEmpty()) {
+            return redirect()->route('admin.certificates.index', [
+                'q'    => $request->input('q'),
+                'page' => $page,
+            ])->withErrors(['general' => 'Tidak ada sertifikat di halaman ini untuk didownload.']);
+        }
+
+        try {
+            $zip = new \ZipArchive();
+
+            $zipFileName = 'sertifikat-halaman-' . $page . '-' . time() . '.zip';
+            $zipPath = storage_path('app/' . $zipFileName);
+
+            if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+                return redirect()->route('admin.certificates.index', [
+                    'q'    => $request->input('q'),
+                    'page' => $page,
+                ])->withErrors(['general' => 'Gagal membuat file ZIP untuk sertifikat.']);
+            }
+
+            $addedFiles = 0;
+
+            foreach ($certificates as $certificate) {
+                if (empty($certificate->generated_pdf_path)) {
+                    continue;
+                }
+
+                $relativePath = ltrim($certificate->generated_pdf_path, '/');
+
+                $candidates = [];
+                $candidates[] = base_path($relativePath);
+                $candidates[] = public_path($relativePath);
+
+                if (str_starts_with($relativePath, 'public/')) {
+                    $trimmed = substr($relativePath, strlen('public/'));
+                    $candidates[] = base_path($trimmed);
+                    $candidates[] = public_path($trimmed);
+                }
+
+                $fullPath = null;
+                foreach ($candidates as $path) {
+                    if ($path && file_exists($path)) {
+                        $fullPath = $path;
+                        break;
+                    }
+                }
+
+                if (! $fullPath) {
+                    continue;
+                }
+
+                $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'sertifikat');
+                $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'sertifikat');
+                $fileNameInZip = 'sertifikat-' . $safeName . '-' . ($certificate->id ?? 'id') . '.pdf';
+
+                $zip->addFile($fullPath, $fileNameInZip);
+                $addedFiles++;
+            }
+
+            if ($addedFiles === 0) {
+                $zip->close();
+                if (file_exists($zipPath)) {
+                    @unlink($zipPath);
+                }
+
+                return redirect()->route('admin.certificates.index', [
+                    'q'    => $request->input('q'),
+                    'page' => $page,
+                ])->withErrors(['general' => 'Tidak ada file sertifikat yang tersedia untuk didownload di halaman ini.']);
+            }
+
+            $zip->close();
+
+            return response()->download($zipPath, $zipFileName)->deleteFileAfterSend(true);
+        } catch (\Throwable $e) {
+            if (isset($zip) && $zip instanceof \ZipArchive) {
+                $zip->close();
+            }
+
+            if (isset($zipPath) && file_exists($zipPath)) {
+                @unlink($zipPath);
+            }
+
+            Log::error('Download page certificates error', [
+                'error' => $e->getMessage(),
+                'page'  => $page,
+                'q'     => $request->input('q'),
+            ]);
+
+            return redirect()->route('admin.certificates.index', [
+                'q'    => $request->input('q'),
+                'page' => $page,
+            ])->withErrors(['general' => 'Terjadi kesalahan saat menyiapkan download sertifikat di halaman ini']);
         }
     }
 

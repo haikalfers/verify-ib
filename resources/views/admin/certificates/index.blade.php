@@ -122,17 +122,30 @@
       </div>
 
       <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 gap-2">
-        <form method="POST" action="{{ route('admin.certificates.destroy-page') }}" onsubmit="return confirm('Hapus semua sertifikat di halaman ini?');">
-          @csrf
-          <input type="hidden" name="q" value="{{ $search ?? '' }}">
-          <input type="hidden" name="page" value="{{ $certificates->currentPage() }}">
-          <button
-            type="submit"
-            class="inline-flex items-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs md:text-sm hover:bg-red-50"
-          >
-            Hapus semua di halaman ini
-          </button>
-        </form>
+        <div class="flex items-center gap-2">
+          <form method="POST" action="{{ route('admin.certificates.destroy-page') }}" onsubmit="return confirm('Hapus semua sertifikat di halaman ini?');">
+            @csrf
+            <input type="hidden" name="q" value="{{ $search ?? '' }}">
+            <input type="hidden" name="page" value="{{ $certificates->currentPage() }}">
+            <button
+              type="submit"
+              class="inline-flex items-center px-3 py-1.5 rounded-lg border border-red-300 text-red-600 text-xs md:text-sm hover:bg-red-50"
+            >
+              Hapus semua di halaman ini
+            </button>
+          </form>
+          <form method="POST" action="{{ route('admin.certificates.download-page') }}">
+            @csrf
+            <input type="hidden" name="q" value="{{ $search ?? '' }}">
+            <input type="hidden" name="page" value="{{ $certificates->currentPage() }}">
+            <button
+              type="submit"
+              class="inline-flex items-center px-3 py-1.5 rounded-lg border border-blue-300 text-blue-600 text-xs md:text-sm hover:bg-blue-50"
+            >
+              Download semua di halaman ini
+            </button>
+          </form>
+        </div>
         <div>
           {{ $certificates->links() }}
         </div>

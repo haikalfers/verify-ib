@@ -349,7 +349,13 @@ class CertificateController extends Controller
     public function destroy($id)
     {
         try {
-            DB::table('certificates')->where('id', $id)->delete();
+            $deleted = $this->deleteCertificateWithFile((int) $id);
+
+            if ($deleted === 0) {
+                return response()->json([
+                    'message' => 'Sertifikat tidak ditemukan',
+                ], 404);
+            }
 
             return response()->json([
                 'message' => 'Sertifikat berhasil dihapus',
@@ -362,6 +368,50 @@ class CertificateController extends Controller
             return response()->json([
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Helper: delete certificate row and its generated PDF file by id.
+     */
+    public function deleteCertificateWithFile(int $id): int
+    {
+        $certificate = DB::table('certificates')->where('id', $id)->first();
+
+        if (! $certificate) {
+            return 0;
+        }
+
+        $this->deleteCertificateFileByRecord($certificate);
+
+        return DB::table('certificates')->where('id', $id)->delete();
+    }
+
+    /**
+     * Helper: delete generated certificate PDF file for a certificate record.
+     */
+    protected function deleteCertificateFileByRecord($certificate): void
+    {
+        if (! $certificate || empty($certificate->generated_pdf_path)) {
+            return;
+        }
+
+        $relativePath = ltrim($certificate->generated_pdf_path, '/');
+
+        $candidates = [];
+        $candidates[] = base_path($relativePath);
+        $candidates[] = public_path($relativePath);
+
+        if (str_starts_with($relativePath, 'public/')) {
+            $trimmed = substr($relativePath, strlen('public/'));
+            $candidates[] = base_path($trimmed);
+            $candidates[] = public_path($trimmed);
+        }
+
+        foreach ($candidates as $path) {
+            if ($path && file_exists($path)) {
+                @unlink($path);
+            }
         }
     }
 }
