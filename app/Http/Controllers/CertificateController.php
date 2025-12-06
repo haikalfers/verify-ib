@@ -79,7 +79,12 @@ class CertificateController extends Controller
 
             $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'sertifikat');
             $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'sertifikat');
-            $downloadName = 'sertifikat-' . $safeName . '.pdf';
+
+            $numberPart = $certificate->certificate_number ?? 'no-number';
+            $numberPart = explode('/', (string) $numberPart)[0] ?? $numberPart;
+            $safeNumber = preg_replace('/[^a-zA-Z0-9]/', '-', $numberPart);
+
+            $downloadName = $safeNumber . '-sertifikat-' . $safeName . '.pdf';
 
             return response()->download($fullPath, $downloadName);
         } catch (\Throwable $e) {

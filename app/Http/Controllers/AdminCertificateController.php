@@ -375,19 +375,19 @@ class AdminCertificateController extends Controller
             $start = new \DateTime($startDate);
             $end   = new \DateTime($endDate);
 
-            $startStr = sprintf(
-                '%02d %s %04d',
-                (int) $start->format('d'),
-                $bulanIndo[(int) $start->format('n')] ?? $start->format('m'),
-                (int) $start->format('Y')
-            );
+            $startMonthName = $bulanIndo[(int) $start->format('n')] ?? $start->format('m');
+            $endMonthName   = $bulanIndo[(int) $end->format('n')] ?? $end->format('m');
+            $startYear      = (int) $start->format('Y');
+            $endYear        = (int) $end->format('Y');
 
-            $endStr = sprintf(
-                '%02d %s %04d',
-                (int) $end->format('d'),
-                $bulanIndo[(int) $end->format('n')] ?? $end->format('m'),
-                (int) $end->format('Y')
-            );
+            if ($startYear === $endYear) {
+                // Contoh: Januari - Maret 2024
+                return $startMonthName . ' - ' . $endMonthName . ' ' . $startYear;
+            }
+
+            // Contoh: Desember 2024 - Januari 2025
+            $startStr = $startMonthName . ' ' . $startYear;
+            $endStr   = $endMonthName . ' ' . $endYear;
 
             return $startStr . ' - ' . $endStr;
         } catch (\Throwable $e) {

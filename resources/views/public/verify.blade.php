@@ -85,7 +85,7 @@
             <div class="mt-4 rounded-lg border border-green-200 bg-green-50 px-3 py-3 text-xs md:text-sm text-green-800">
               <p class="font-semibold mb-1">Sertifikat Valid</p>
               <p class="mb-1">Nama: <span class="font-medium">{{ $certificate->name }}</span></p>
-              <p class="mb-1">Judul Sertifikat: <span class="font-medium">{{ $certificate->certificate_title }}</span></p>
+              <p class="mb-1">Sekolah/Institusi: <span class="font-medium">{{ $certificate->company_name }}</span></p>
               @if ($certificate->issued_date)
                 <p class="mb-1">Tanggal Terbit: <span class="font-medium">{{ \Illuminate\Support\Carbon::parse($certificate->issued_date)->format('d-m-Y') }}</span></p>
               @endif

@@ -97,7 +97,7 @@ class CertificatePdfService
             $defaults = [
                 // Nomor Sertifikat - tengah halaman, sekitar 30% dari atas (abu-abu gelap)
                 'certificate_number' => [
-                    'x'        => 105,
+                    'x'        => 103,
                     'y'        => 90,
                     'size'     => 15,
                     'centered' => true,
@@ -106,7 +106,7 @@ class CertificatePdfService
                 ],
                 // Nama - tengah halaman, lebih ke tengah, merah (tanpa bold agar sedikit lebih ringan)
                 'name' => [
-                    'x'        => 105,
+                    'x'        => 103,
                     'y'        => 120,
                     'size'     => 40,
                     'centered' => true,
@@ -115,7 +115,7 @@ class CertificatePdfService
                 ],
                 // Nama sekolah/perusahaan - sedikit di bawah nama, merah
                 'company_name' => [
-                    'x'        => 105,
+                    'x'        => 103,
                     'y'        => 135,
                     'size'     => 18,
                     'centered' => true,
@@ -123,7 +123,7 @@ class CertificatePdfService
                 ],
                 // Bidang kompetensi - tengah, merah
                 'competency_field' => [
-                    'x'        => 105,
+                    'x'        => 103,
                     'y'        => 164,
                     'size'     => 18,
                     'centered' => true,
@@ -131,7 +131,7 @@ class CertificatePdfService
                 ],
                 // Topik kompetensi - sedikit di bawah bidang kompetensi, merah
                 'certificate_title' => [
-                    'x'        => 105,
+                    'x'        => 103,
                     'y'        => 191,
                     'size'     => 18,
                     'centered' => true,
@@ -147,7 +147,7 @@ class CertificatePdfService
                 ],
                 // Kode verifikasi - dekat bawah kanan, abu-abu
                 'verify_code' => [
-                    'x'        => 166.5,
+                    'x'        => 163,
                     'y'        => 271,
                     'size'     => 10,
                     'centered' => false,
