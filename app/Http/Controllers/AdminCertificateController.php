@@ -12,18 +12,36 @@ class AdminCertificateController extends Controller
     {
         $query = DB::table('certificates')->orderByDesc('id');
 
-        if ($search = $request->get('q')) {
+        $search = $request->get('q');
+        $categoryFilter = $request->get('category');
+
+        if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%")
                   ->orWhere('certificate_number', 'like', "%{$search}%")
-                  ->orWhere('verify_code', 'like', "%{$search}%");
+                  ->orWhere('verify_code', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%");
             });
+        }
+
+        if ($categoryFilter) {
+            $query->where('category', $categoryFilter);
         }
 
         $certificates = $query->paginate(10)->withQueryString();
 
-        return view('admin.certificates.index', compact('certificates', 'search'));
+        $categories = DB::table('categories')
+            ->orderBy('name', 'asc')
+            ->pluck('name');
+
+        return view('admin.certificates.index', [
+            'certificates' => $certificates,
+            'search'       => $search,
+            'categories'   => $categories,
+            'category'     => $categoryFilter,
+        ]);
     }
 
     public function importForm()
@@ -429,13 +447,21 @@ class AdminCertificateController extends Controller
 
         $query = DB::table('certificates')->orderByDesc('id');
 
-        if ($search = $request->input('q')) {
+        $search = $request->input('q');
+        $categoryFilter = $request->input('category');
+
+        if ($search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%")
                   ->orWhere('certificate_number', 'like', "%{$search}%")
                   ->orWhere('verify_code', 'like', "%{$search}%");
             });
+        }
+
+        if ($categoryFilter) {
+            $query->where('category', $categoryFilter);
         }
 
         $ids = $query->forPage($page, $perPage)->pluck('id');
@@ -495,6 +521,7 @@ class AdminCertificateController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('category', 'like', "%{$search}%")
                   ->orWhere('certificate_number', 'like', "%{$search}%")
                   ->orWhere('verify_code', 'like', "%{$search}%");
             });
@@ -553,9 +580,16 @@ class AdminCertificateController extends Controller
                     continue;
                 }
 
+                // Samakan format nama file dengan download manual:
+                // nomor-surat-sertifikat-nama.pdf
                 $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'sertifikat');
                 $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'sertifikat');
-                $fileNameInZip = 'sertifikat-' . $safeName . '-' . ($certificate->id ?? 'id') . '.pdf';
+
+                $numberPart = $certificate->certificate_number ?? 'no-number';
+                $numberPart = explode('/', (string) $numberPart)[0] ?? $numberPart;
+                $safeNumber = preg_replace('/[^a-zA-Z0-9]/', '-', $numberPart);
+
+                $fileNameInZip = $safeNumber . '-sertifikat-' . $safeName . '.pdf';
 
                 $zip->addFile($fullPath, $fileNameInZip);
                 $addedFiles++;

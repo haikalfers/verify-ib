@@ -140,7 +140,7 @@ class CertificatePdfService
                 // Tempat & tanggal terbit - bagian bawah, center, abu-abu gelap
                 'issued_date' => [
                     'x'        => 103,
-                    'y'        => 223,
+                    'y'        => 228,
                     'size'     => 12,
                     'centered' => true,
                     'color'    => ['r' => 0.1, 'g' => 0.1, 'b' => 0.1],

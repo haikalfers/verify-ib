@@ -25,11 +25,6 @@
         <p class="text-2xl font-bold text-gray-900">41</p>
         <p class="text-[11px] text-green-600">+8% dari bulan lalu</p>
       </div>
-      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 px-4 py-3 flex flex-col gap-1">
-        <p class="text-xs font-medium text-gray-500">Menunggu Persetujuan</p>
-        <p class="text-2xl font-bold text-gray-900">0</p>
-        <p class="text-[11px] text-red-500">-2% dari bulan lalu</p>
-      </div>
     </div>
 
     {{-- Baris kedua: Aksi Cepat & Aktivitas Terbaru --}}
