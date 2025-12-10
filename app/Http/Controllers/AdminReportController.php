@@ -9,12 +9,15 @@ class AdminReportController extends Controller
 {
     public function index(Request $request)
     {
-        // Statistik utama
-        $totalCertificates = DB::table('certificates')->count();
+        // Statistik utama (hanya sertifikat yang belum dihapus)
+        $totalCertificates = DB::table('certificates')
+            ->whereNull('deleted_at')
+            ->count();
         $totalTemplates    = DB::table('certificate_templates')->count();
 
         // Sertifikat per kategori
         $byCategory = DB::table('certificates')
+            ->whereNull('deleted_at')
             ->select('category', DB::raw('COUNT(*) as total'))
             ->groupBy('category')
             ->orderByDesc('total')
@@ -23,6 +26,7 @@ class AdminReportController extends Controller
 
         // Sertifikat terbit per bulan (12 bulan terakhir)
         $byMonth = DB::table('certificates')
+            ->whereNull('deleted_at')
             ->select(
                 DB::raw("DATE_FORMAT(issued_date, '%Y-%m') as ym"),
                 DB::raw('COUNT(*) as total')
@@ -67,6 +71,7 @@ class AdminReportController extends Controller
             ], ';');
 
             $rows = DB::table('certificates')
+                ->whereNull('deleted_at')
                 ->leftJoin('certificate_templates', 'certificates.template_id', '=', 'certificate_templates.id')
                 ->select(
                     'certificates.certificate_number',

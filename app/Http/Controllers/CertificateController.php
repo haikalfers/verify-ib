@@ -16,6 +16,7 @@ class CertificateController extends Controller
     {
         try {
             $rows = DB::table('certificates')
+                ->whereNull('deleted_at')
                 ->orderByDesc('id')
                 ->get();
 
@@ -37,7 +38,10 @@ class CertificateController extends Controller
     public function download($id)
     {
         try {
-            $certificate = DB::table('certificates')->where('id', $id)->first();
+            $certificate = DB::table('certificates')
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first();
 
             if (! $certificate || empty($certificate->generated_pdf_path)) {
                 return response()->json([
@@ -381,24 +385,35 @@ class CertificateController extends Controller
      */
     public function deleteCertificateWithFile(int $id): int
     {
+        // Ambil sertifikat (baik yang masih aktif maupun yang sudah soft-delete)
         $certificate = DB::table('certificates')->where('id', $id)->first();
 
         if (! $certificate) {
             return 0;
         }
 
-        $this->deleteCertificateFileByRecord($certificate);
+        // Pindahkan file PDF ke folder trash dan dapatkan path barunya
+        $trashedPath = $this->deleteCertificateFileByRecord($certificate);
 
-        return DB::table('certificates')->where('id', $id)->delete();
+        // Soft delete: tandai deleted_at, simpan lokasi file di trash, kosongkan generated_pdf_path
+        DB::table('certificates')
+            ->where('id', $id)
+            ->update([
+                'deleted_at'        => now(),
+                'trashed_pdf_path'  => $trashedPath,
+                'generated_pdf_path'=> null,
+            ]);
+
+        return 1;
     }
 
     /**
      * Helper: delete generated certificate PDF file for a certificate record.
      */
-    protected function deleteCertificateFileByRecord($certificate): void
+    protected function deleteCertificateFileByRecord($certificate): ?string
     {
         if (! $certificate || empty($certificate->generated_pdf_path)) {
-            return;
+            return null;
         }
 
         $relativePath = ltrim($certificate->generated_pdf_path, '/');
@@ -413,10 +428,34 @@ class CertificateController extends Controller
             $candidates[] = public_path($trimmed);
         }
 
+        $sourcePath = null;
         foreach ($candidates as $path) {
             if ($path && file_exists($path)) {
-                @unlink($path);
+                $sourcePath = $path;
+                break;
             }
         }
+
+        if (! $sourcePath) {
+            return null;
+        }
+
+        // Siapkan folder trash
+        $trashRelativeDir = 'uploads/trash/certificates';
+        $trashDir = base_path($trashRelativeDir);
+
+        if (! is_dir($trashDir)) {
+            @mkdir($trashDir, 0775, true);
+        }
+
+        $originalName = basename($sourcePath);
+        $newName = ($certificate->id ?? 'cert') . '-' . time() . '-' . $originalName;
+        $targetPath = $trashDir . DIRECTORY_SEPARATOR . $newName;
+
+        if (@rename($sourcePath, $targetPath)) {
+            return '/' . trim($trashRelativeDir . '/' . $newName, '/');
+        }
+
+        return null;
     }
 }

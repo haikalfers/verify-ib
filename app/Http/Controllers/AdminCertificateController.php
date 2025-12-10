@@ -10,7 +10,9 @@ class AdminCertificateController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DB::table('certificates')->orderByDesc('id');
+        $query = DB::table('certificates')
+            ->whereNull('deleted_at')
+            ->orderByDesc('id');
 
         $search = $request->get('q');
         $categoryFilter = $request->get('category');
@@ -505,7 +507,9 @@ class AdminCertificateController extends Controller
 
         $perPage = 10; // harus sama dengan paginate(10) di index()
 
-        $query = DB::table('certificates')->orderByDesc('id');
+        $query = DB::table('certificates')
+            ->whereNull('deleted_at')
+            ->orderByDesc('id');
 
         $search = $request->input('q');
         $categoryFilter = $request->input('category');
@@ -710,15 +714,20 @@ class AdminCertificateController extends Controller
                     ->withErrors(['general' => 'ID sertifikat tidak valid']);
             }
 
-            $deleted = DB::table('certificates')->whereIn('id', $idInts)->delete();
+            $api = new CertificateController();
+            $deletedTotal = 0;
 
-            if ($deleted === 0) {
+            foreach ($idInts as $cid) {
+                $deletedTotal += $api->deleteCertificateWithFile((int) $cid);
+            }
+
+            if ($deletedTotal === 0) {
                 return redirect()->route('admin.certificates.index')
                     ->withErrors(['general' => 'Tidak ada sertifikat yang terhapus. Pastikan data masih ada dan coba lagi.']);
             }
 
             return redirect()->route('admin.certificates.index')
-                ->with('status', "{$deleted} sertifikat terpilih berhasil dihapus");
+                ->with('status', "{$deletedTotal} sertifikat terpilih berhasil dihapus");
         } catch (\Throwable $e) {
             Log::error('Bulk destroy certificates error', [
                 'error' => $e->getMessage(),
@@ -727,6 +736,155 @@ class AdminCertificateController extends Controller
 
             return redirect()->route('admin.certificates.index')
                 ->withErrors(['general' => 'Terjadi kesalahan saat menghapus sertifikat terpilih']);
+        }
+    }
+
+    public function trash(Request $request)
+    {
+        $baseQuery = DB::table('certificates')
+            ->whereNotNull('deleted_at');
+
+        // Kumpulan kategori untuk dropdown filter
+        $categories = (clone $baseQuery)
+            ->whereNotNull('category')
+            ->select('category')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category');
+
+        $query = clone $baseQuery;
+
+        $search   = $request->get('q');
+        $category = $request->get('category');
+
+        if ($search) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('certificate_title', 'like', "%{$search}%")
+                  ->orWhere('certificate_number', 'like', "%{$search}%")
+                  ->orWhere('verify_code', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($category) {
+            $query->where('category', $category);
+        }
+
+        $certificates = $query
+            ->orderByDesc('deleted_at')
+            ->paginate(10)
+            ->withQueryString();
+
+        return view('admin.certificates.trash', [
+            'certificates' => $certificates,
+            'search'       => $search,
+            'category'     => $category,
+            'categories'   => $categories,
+        ]);
+    }
+
+    public function restore($id)
+    {
+        try {
+            $certificate = DB::table('certificates')->where('id', $id)->first();
+
+            if (! $certificate || $certificate->deleted_at === null) {
+                return redirect()->route('admin.certificates.trash')
+                    ->withErrors(['general' => 'Sertifikat tidak ditemukan di trash.']);
+            }
+
+            $newGeneratedPath = null;
+
+            if (! empty($certificate->trashed_pdf_path)) {
+                $relativePath = ltrim($certificate->trashed_pdf_path, '/');
+
+                $candidates = [];
+                $candidates[] = base_path($relativePath);
+                $candidates[] = public_path($relativePath);
+
+                $sourcePath = null;
+                foreach ($candidates as $path) {
+                    if ($path && file_exists($path)) {
+                        $sourcePath = $path;
+                        break;
+                    }
+                }
+
+                if ($sourcePath) {
+                    $activeDir = base_path('uploads/certificates');
+                    if (! is_dir($activeDir)) {
+                        @mkdir($activeDir, 0775, true);
+                    }
+
+                    $originalName = basename($sourcePath);
+                    $newName = ($certificate->id ?? 'cert') . '-' . time() . '-' . $originalName;
+                    $targetPath = $activeDir . DIRECTORY_SEPARATOR . $newName;
+
+                    if (@rename($sourcePath, $targetPath)) {
+                        $newGeneratedPath = '/uploads/certificates/' . $newName;
+                    }
+                }
+            }
+
+            DB::table('certificates')
+                ->where('id', $id)
+                ->update([
+                    'deleted_at'         => null,
+                    'trashed_pdf_path'   => null,
+                    'generated_pdf_path' => $newGeneratedPath,
+                ]);
+
+            return redirect()->route('admin.certificates.trash')
+                ->with('status', 'Sertifikat berhasil direstore');
+        } catch (\Throwable $e) {
+            Log::error('Admin restore certificate error', [
+                'id'    => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.certificates.trash')
+                ->withErrors(['general' => 'Terjadi kesalahan saat merestore sertifikat']);
+        }
+    }
+
+    public function forceDelete($id)
+    {
+        try {
+            $certificate = DB::table('certificates')->where('id', $id)->first();
+
+            if (! $certificate) {
+                return redirect()->route('admin.certificates.trash')
+                    ->withErrors(['general' => 'Sertifikat tidak ditemukan.']);
+            }
+
+            // Hapus file di trash jika masih ada
+            if (! empty($certificate->trashed_pdf_path)) {
+                $relativePath = ltrim($certificate->trashed_pdf_path, '/');
+
+                $candidates = [];
+                $candidates[] = base_path($relativePath);
+                $candidates[] = public_path($relativePath);
+
+                foreach ($candidates as $path) {
+                    if ($path && file_exists($path)) {
+                        @unlink($path);
+                    }
+                }
+            }
+
+            DB::table('certificates')->where('id', $id)->delete();
+
+            return redirect()->route('admin.certificates.trash')
+                ->with('status', 'Sertifikat berhasil dihapus permanen');
+        } catch (\Throwable $e) {
+            Log::error('Admin force delete certificate error', [
+                'id'    => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.certificates.trash')
+                ->withErrors(['general' => 'Terjadi kesalahan saat menghapus permanen sertifikat']);
         }
     }
 }

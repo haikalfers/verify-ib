@@ -25,6 +25,7 @@ class VerificationController extends Controller
             }
 
             $certificate = DB::table('certificates')
+                ->whereNull('deleted_at')
                 ->where('verify_code', $verifyCode)
                 ->whereRaw('LOWER(TRIM(name)) = LOWER(TRIM(?))', [$name])
                 ->whereRaw('DATE(date_of_birth) = DATE(?)', [$dateOfBirth])

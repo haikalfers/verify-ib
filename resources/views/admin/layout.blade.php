@@ -25,7 +25,7 @@
             <span>Dashboard</span>
           </a>
           <a href="{{ route('admin.certificates.index') }}"
-             class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.certificates.*') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
+             class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.certificates.*') && !request()->routeIs('admin.certificates.trash') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
             <span class="text-lg">📜</span>
             <span>Kelola Sertifikat</span>
           </a>
@@ -38,6 +38,11 @@
              class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.reports.*') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
             <span class="text-lg">📊</span>
             <span>Laporan</span>
+          </a>
+          <a href="{{ route('admin.certificates.trash') }}"
+             class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.certificates.trash') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
+            <span class="text-lg">🗑️</span>
+            <span>Trash</span>
           </a>
         </nav>
 
