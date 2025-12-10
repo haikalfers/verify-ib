@@ -357,19 +357,79 @@ class AdminCertificateController extends Controller
             );
         }
 
-        DB::table('certificates')->where('id', $id)->update([
-            'name'               => $data['name'],
-            'place_of_birth'     => $data['place_of_birth'] ?? null,
-            'date_of_birth'      => $data['date_of_birth'] ?? null,
-            'certificate_title'  => $data['certificate_title'],
-            'category'           => $data['category'] ?? null,
-            'competency_field'   => $data['competency_field'] ?? null,
-            'issued_date'        => $data['issued_date'] ?? null,
-            'place_of_issue'     => $data['place_of_issue'] ?? null,
-            'company_name'       => $data['company_name'],
-        ]);
+        try {
+            $certificate = DB::table('certificates')->where('id', $id)->first();
 
-        return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil diperbarui');
+            if (! $certificate) {
+                abort(404);
+            }
+
+            if (!empty($certificate->generated_pdf_path)) {
+                $relativePath = ltrim($certificate->generated_pdf_path, '/');
+
+                $candidates = [];
+                $candidates[] = base_path($relativePath);
+                $candidates[] = public_path($relativePath);
+
+                if (str_starts_with($relativePath, 'public/')) {
+                    $trimmed = substr($relativePath, strlen('public/'));
+                    $candidates[] = base_path($trimmed);
+                    $candidates[] = public_path($trimmed);
+                }
+
+                foreach ($candidates as $path) {
+                    if ($path && file_exists($path)) {
+                        @unlink($path);
+                    }
+                }
+            }
+
+            DB::table('certificates')->where('id', $id)->update([
+                'name'               => $data['name'],
+                'place_of_birth'     => $data['place_of_birth'] ?? null,
+                'date_of_birth'      => $data['date_of_birth'] ?? null,
+                'certificate_title'  => $data['certificate_title'],
+                'category'           => $data['category'] ?? null,
+                'competency_field'   => $data['competency_field'] ?? null,
+                'issued_date'        => $data['issued_date'] ?? null,
+                'place_of_issue'     => $data['place_of_issue'] ?? null,
+                'company_name'       => $data['company_name'],
+            ]);
+
+            $updated = DB::table('certificates')->where('id', $id)->first();
+
+            if ($updated && !empty($updated->template_id)) {
+                $template = DB::table('certificate_templates')
+                    ->where('id', $updated->template_id)
+                    ->where('is_active', 1)
+                    ->first();
+
+                if ($template) {
+                    $templateArray = (array) $template;
+                    $certificateArray = (array) $updated;
+
+                    $pdfService = new CertificatePdfService();
+                    $relativePath = $pdfService->generate($templateArray, $certificateArray);
+
+                    if ($relativePath) {
+                        DB::table('certificates')
+                            ->where('id', $updated->id)
+                            ->update(['generated_pdf_path' => $relativePath]);
+                    }
+                }
+            }
+
+            return redirect()->route('admin.certificates.index')->with('status', 'Sertifikat berhasil diperbarui');
+        } catch (\Throwable $e) {
+            Log::error('Admin update certificate error', [
+                'id'    => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()
+                ->withErrors(['general' => 'Terjadi kesalahan saat memperbarui sertifikat'])
+                ->withInput();
+        }
     }
 
     protected function buildInternshipPeriodTitle(string $startDate, string $endDate): string
