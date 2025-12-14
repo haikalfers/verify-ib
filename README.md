@@ -1,10 +1,11 @@
 ## Portal Verifikasi Sertifikat – Laravel
 
-Aplikasi full **Laravel** untuk **Portal Verifikasi Sertifikat Indo Bismar**. Seluruh tampilan publik dan panel admin menggunakan Blade + Tailwind. Proyek ini menyediakan:
+Aplikasi full **Laravel** untuk **Portal Verifikasi Sertifikat Indo Bismar** (backend + tampilan publik & admin). Seluruh tampilan menggunakan Blade + Tailwind. Proyek ini menyediakan:
 
 - Halaman publik landing & form verifikasi sertifikat.
 - Panel admin untuk mengelola sertifikat, template sertifikat, dan laporan.
-- Fitur generate PDF sertifikat berdasarkan template.
+- Fitur generate PDF sertifikat berdasarkan template (FPDF/FPDI).
+- Sistem **Trash** untuk sertifikat yang dihapus, dengan auto purge setelah 30 hari.
 
 ---
 
@@ -12,8 +13,9 @@ Aplikasi full **Laravel** untuk **Portal Verifikasi Sertifikat Indo Bismar**. Se
 
 - PHP ^8.2
 - Laravel ^12
-- MySQL / MariaDB
+- MySQL / MariaDB (database default: `sertifikat_db` di `.env`)
 - Tailwind CSS (via CDN) untuk tampilan Blade admin & publik
+- FPDF + FPDI untuk generate PDF sertifikat
 
 ---
 
@@ -38,15 +40,15 @@ Aplikasi full **Laravel** untuk **Portal Verifikasi Sertifikat Indo Bismar**. Se
    cp .env.example .env
    ```
 
-5. **Atur konfigurasi database** di `.env`:
+5. **Atur konfigurasi database** di `.env` (contoh lokal bawaan):
 
    ```env
    DB_CONNECTION=mysql
    DB_HOST=127.0.0.1
    DB_PORT=3306
-   DB_DATABASE=verif_sertif
+   DB_DATABASE=sertifikat_db
    DB_USERNAME=root
-   DB_PASSWORD=your_password
+   DB_PASSWORD=
    ```
 
 6. **Generate key aplikasi**:
@@ -71,22 +73,25 @@ Di folder `laravelback`:
 php artisan serve
 ```
 
-Aplikasi akan berjalan di `http://127.0.0.1:8000`.
+Aplikasi akan berjalan di `http://127.0.0.1:8000` (atau base URL sesuai `APP_URL`).
 
-### Route Utama
+### Route Utama (Publik)
 
 - `GET /` – Landing page publik.
 - `GET /verifikasi` – Form verifikasi sertifikat publik.
-- `POST /verifikasi` – Proses verifikasi.
-- `GET /sertifikat/{id}/download` – Download PDF sertifikat publik.
+- `POST /verifikasi` – Proses verifikasi sertifikat.
+- `GET /sertifikat/{id}/download` – Download PDF sertifikat publik (jika file tersedia).
 
 ### Panel Admin
 
 - `GET /admin` – Redirect otomatis ke `/admin/login` atau `/admin/dashboard` jika sudah login.
-- `GET /admin/login` – Form login admin (session berbasis middleware kustom).
+- `GET /admin/login` – Form login admin (session berbasis middleware kustom `AdminWebMiddleware`).
 - `GET /admin/dashboard` – Dashboard admin (ringkasan data & aksi cepat).
-- `GET /admin/certificates` – Kelola sertifikat (CRUD, lihat & download PDF).
-- `GET /admin/templates` – Kelola template sertifikat (CRUD, toggle aktif, preview gambar).
+- `GET /admin/certificates` – Kelola sertifikat (listing, filter, pagination, download ZIP per halaman, bulk delete).
+- `GET /admin/certificates/create` – Form input sertifikat baru.
+- `GET /admin/certificates/import` – Form impor CSV sertifikat.
+- `GET /admin/certificates/trash` – Halaman Trash sertifikat (restore / hapus permanen).
+- `GET /admin/templates` – Kelola template sertifikat (CRUD, toggle aktif, preview gambar/PDF sebagai background sertifikat).
 - `GET /admin/reports` – Laporan sistem (statistik, distribusi, export CSV).
 
 ---
