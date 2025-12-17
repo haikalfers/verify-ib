@@ -26,6 +26,8 @@ Route::get('/admin', function () {
 // Admin web auth
 Route::get('/admin/login', [AdminWebAuthController::class, 'showLoginForm'])->name('admin.login');
 Route::post('/admin/login', [AdminWebAuthController::class, 'login'])->name('admin.login.submit');
+Route::get('/admin/verify-code', [AdminWebAuthController::class, 'showVerifyForm'])->name('admin.verify.form');
+Route::post('/admin/verify-code', [AdminWebAuthController::class, 'verifyCode'])->name('admin.verify.submit');
 Route::post('/admin/logout', [AdminWebAuthController::class, 'logout'])->name('admin.logout');
 
 // Admin dashboard & modules (protected by admin session)
@@ -62,4 +64,7 @@ Route::middleware([\App\Http\Middleware\AdminWebMiddleware::class])->group(funct
     // Laporan
     Route::get('/admin/reports', [AdminReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/admin/reports/export', [AdminReportController::class, 'exportCsv'])->name('admin.reports.export');
+    // Route::get('/debug-mail', function () {
+    //     return response()->json(config('mail.mailers.smtp'));
+    // });
 });
