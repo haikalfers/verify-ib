@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AdminOtpMail;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AdminWebAuthController extends Controller
 {
@@ -29,13 +30,16 @@ class AdminWebAuthController extends Controller
         ]);
 
         // Batasi hanya ke satu akun tetap
-        if ($credentials['email'] !== self::ADMIN_EMAIL || $credentials['password'] !== self::ADMIN_PASSWORD) {
+        if (
+            $credentials['email'] !== self::ADMIN_EMAIL ||
+            $credentials['password'] !== self::ADMIN_PASSWORD
+        ) {
             return back()
                 ->withErrors(['email' => 'Email atau password salah'])
                 ->withInput(['email' => $credentials['email']]);
         }
 
-        // Jika device sudah pernah verifikasi (cookie ada), langsung login
+        // Jika device sudah pernah verifikasi, langsung login
         if ($request->cookie('admin_email_verified') === '1') {
             session(['admin_user' => [
                 'id' => 1,
@@ -45,7 +49,7 @@ class AdminWebAuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        // Jika belum verifikasi di device ini, kirim kode verifikasi ke email admin
+        // Generate OTP
         $code = Str::upper(Str::random(6));
 
         session([
@@ -53,37 +57,31 @@ class AdminWebAuthController extends Controller
         ]);
 
         try {
-            Mail::raw("Kode verifikasi login admin Anda: {$code}", function ($message) {
-                $message->to(self::ADMIN_EMAIL)
-                    ->subject('Kode Verifikasi Login Admin');
-            });
+            // ✅ KIRIM EMAIL DENGAN MAILABLE (HTML)
+            Mail::to(self::ADMIN_EMAIL)
+                ->send(new AdminOtpMail($code));
 
             $statusMessage = 'Kode verifikasi telah dikirim ke email admin.';
-        } catch (\Throwable $e) {
-            \Log::error('Gagal mengirim email verifikasi admin', [
+        } catch (TransportExceptionInterface $e) {
+            // ❌ SMTP benar-benar gagal
+            \Log::error('SMTP error saat mengirim OTP admin', [
                 'error' => $e->getMessage(),
             ]);
 
-            // Di lingkungan lokal / saat SMTP belum siap, tetap lanjut ke halaman verifikasi
-            $statusMessage = "Gagal mengirim email verifikasi. Gunakan kode berikut secara manual: {$code}";
+            return back()->withErrors([
+                'email' => 'Gagal mengirim email verifikasi. Silakan coba lagi.',
+            ]);
         }
 
-        return redirect()->route('admin.verify.form')
+        return redirect()
+            ->route('admin.verify.form')
             ->with('status', $statusMessage);
-    }
-
-    public function logout()
-    {
-        session()->forget('admin_user');
-
-        return redirect()->route('admin.login');
     }
 
     public function showVerifyForm(Request $request)
     {
-        // Jika device sudah memiliki cookie verifikasi, pastikan sesi login ada lalu arahkan ke dashboard
         if ($request->cookie('admin_email_verified') === '1') {
-            if (! session()->has('admin_user')) {
+            if (!session()->has('admin_user')) {
                 session(['admin_user' => [
                     'id' => 1,
                     'email' => self::ADMIN_EMAIL,
@@ -93,8 +91,7 @@ class AdminWebAuthController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        // Jika tidak ada kode yang menunggu verifikasi, kembali ke halaman login
-        if (! session()->has('admin_pending_verification_code')) {
+        if (!session()->has('admin_pending_verification_code')) {
             return redirect()->route('admin.login');
         }
 
@@ -113,13 +110,13 @@ class AdminWebAuthController extends Controller
             return redirect()->route('admin.login');
         }
 
-        if (strtoupper($request->input('code')) !== strtoupper($expectedCode)) {
+        if (strtoupper($request->code) !== strtoupper($expectedCode)) {
             return back()
                 ->withErrors(['code' => 'Kode verifikasi salah'])
-                ->withInput(['code' => $request->input('code')]);
+                ->withInput(['code' => $request->code]);
         }
 
-        // Kode benar: hapus kode dari sesi dan set user + cookie verifikasi device
+        // Kode benar
         session()->forget('admin_pending_verification_code');
 
         session(['admin_user' => [
@@ -127,7 +124,15 @@ class AdminWebAuthController extends Controller
             'email' => self::ADMIN_EMAIL,
         ]]);
 
-        return redirect()->route('admin.dashboard')
+        return redirect()
+            ->route('admin.dashboard')
             ->withCookie(cookie()->forever('admin_email_verified', '1'));
+    }
+
+    public function logout()
+    {
+        session()->forget('admin_user');
+
+        return redirect()->route('admin.login');
     }
 }
