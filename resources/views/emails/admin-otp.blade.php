@@ -8,7 +8,8 @@
 <table width="100%" cellpadding="0" cellspacing="0">
     <tr>
         <td align="center" style="padding:40px 0;">
-            <table width="100%" max-width="500" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;padding:30px;">
+            <table width="100%" cellpadding="0" cellspacing="0"
+                   style="max-width:500px;background:#ffffff;border-radius:12px;padding:30px;">
                 
                 <!-- HEADER -->
                 <tr>
@@ -52,6 +53,38 @@
                         <p style="font-size:13px;color:#64748b;">
                             Kode ini hanya berlaku selama <strong>15 menit</strong>.
                         </p>
+
+                        @php
+                            $ctx = $context ?? [];
+                        @endphp
+
+                        <!-- SECURITY INFO -->
+                        <div style="margin-top:24px;padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;">
+                            <p style="margin:0 0 8px;font-size:14px;font-weight:bold;color:#0f172a;">
+                                Informasi Keamanan
+                            </p>
+                            <p style="margin:0 0 10px;font-size:13px;color:#334155;line-height:1.6;">
+                                Jika Anda tidak merasa mencoba login, abaikan email ini dan segera periksa keamanan akun Anda.
+                            </p>
+                            <table width="100%" cellpadding="0" cellspacing="0" style="font-size:13px;color:#0f172a;">
+                                <tr>
+                                    <td style="padding:6px 0;color:#64748b;width:140px;">Alamat IP</td>
+                                    <td style="padding:6px 0;">{{ $ctx['ip'] ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 0;color:#64748b;">Perangkat / Browser</td>
+                                    <td style="padding:6px 0;">{{ $ctx['user_agent'] ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 0;color:#64748b;">Lokasi Perkiraan</td>
+                                    <td style="padding:6px 0;">{{ $ctx['location'] ?? 'Tidak tersedia' }}</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding:6px 0;color:#64748b;">Waktu Login</td>
+                                    <td style="padding:6px 0;">{{ $ctx['login_time'] ?? '-' }}</td>
+                                </tr>
+                            </table>
+                        </div>
 
                         <p style="margin-top:30px;">
                             Salam,<br>

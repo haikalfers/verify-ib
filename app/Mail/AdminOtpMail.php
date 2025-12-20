@@ -11,10 +11,12 @@ class AdminOtpMail extends Mailable
     use Queueable, SerializesModels;
 
     public string $code;
+    public array $context;
 
-    public function __construct(string $code)
+    public function __construct(string $code, array $context = [])
     {
         $this->code = $code;
+        $this->context = $context;
     }
 
     public function build()

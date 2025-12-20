@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Mail\AdminOtpMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class AdminWebAuthController extends Controller
@@ -29,7 +28,6 @@ class AdminWebAuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        // Batasi hanya ke satu akun tetap
         if (
             $credentials['email'] !== self::ADMIN_EMAIL ||
             $credentials['password'] !== self::ADMIN_PASSWORD
@@ -39,7 +37,6 @@ class AdminWebAuthController extends Controller
                 ->withInput(['email' => $credentials['email']]);
         }
 
-        // Jika device sudah pernah verifikasi, langsung login
         if ($request->cookie('admin_email_verified') === '1') {
             session(['admin_user' => [
                 'id' => 1,
@@ -50,20 +47,21 @@ class AdminWebAuthController extends Controller
         }
 
         // Generate OTP
-        $code = Str::upper(Str::random(6));
+        $code = self::generateVerificationCode();
 
         session([
             'admin_pending_verification_code' => $code,
         ]);
 
         try {
-            // ✅ KIRIM EMAIL DENGAN MAILABLE (HTML)
+            // ★ KONTEN KEAMANAN EMAIL
+            $context = self::buildOtpSecurityContext($request);
+
             Mail::to(self::ADMIN_EMAIL)
-                ->send(new AdminOtpMail($code));
+                ->send(new AdminOtpMail($code, $context));
 
             $statusMessage = 'Kode verifikasi telah dikirim ke email admin.';
         } catch (TransportExceptionInterface $e) {
-            // ❌ SMTP benar-benar gagal
             \Log::error('SMTP error saat mengirim OTP admin', [
                 'error' => $e->getMessage(),
             ]);
@@ -76,6 +74,110 @@ class AdminWebAuthController extends Controller
         return redirect()
             ->route('admin.verify.form')
             ->with('status', $statusMessage);
+    }
+
+    /**
+     * ===============================
+     * ★ BAGIAN YANG DIPERBAIKI
+     * ===============================
+     */
+    private static function buildOtpSecurityContext(Request $request): array
+    {
+        $ip = $request->ip();
+        $rawUa = (string) $request->header('User-Agent', '');
+        $userAgent = self::parseUserAgent($rawUa);
+
+        $location = self::resolveLocationFromIp($ip);
+
+        // ★ WAKTU LOGIN DALAM WIB (UTC+7)
+        $loginTimeWib = now()
+            ->setTimezone('Asia/Jakarta')
+            ->format('d M Y, H:i:s') . ' WIB';
+
+        return [
+            'ip' => $ip,
+            'user_agent' => $userAgent !== '' ? $userAgent : 'Tidak diketahui',
+            'location' => $location,
+            'login_time' => $loginTimeWib, // ★ SUDAH WIB
+        ];
+    }
+
+    private static function resolveLocationFromIp(string $ip): string
+    {
+        try {
+            $response = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,city,country");
+            if (! $response) {
+                return 'Tidak tersedia';
+            }
+
+            $data = json_decode($response, true);
+            if (($data['status'] ?? null) !== 'success') {
+                return 'Tidak tersedia';
+            }
+
+            $parts = array_filter([
+                $data['city'] ?? null,
+                $data['country'] ?? null,
+            ]);
+
+            return $parts ? implode(', ', $parts) : 'Tidak tersedia';
+        } catch (\Throwable $e) {
+            return 'Tidak tersedia';
+        }
+    }
+
+    private static function parseUserAgent(string $ua): string
+    {
+        $browser = 'Browser tidak diketahui';
+        $os = 'OS tidak diketahui';
+
+        if (stripos($ua, 'Edg/') !== false) {
+            $browser = 'Microsoft Edge';
+        } elseif (stripos($ua, 'OPR/') !== false || stripos($ua, 'Opera') !== false) {
+            $browser = 'Opera';
+        } elseif (stripos($ua, 'Brave/') !== false || stripos($ua, 'Brave') !== false) {
+            $browser = 'Brave';
+        } elseif (stripos($ua, 'Chrome/') !== false) {
+            $browser = 'Google Chrome';
+        } elseif (stripos($ua, 'Firefox/') !== false) {
+            $browser = 'Mozilla Firefox';
+        } elseif (stripos($ua, 'Safari/') !== false) {
+            $browser = 'Safari';
+        }
+
+        if (stripos($ua, 'Windows NT 10') !== false) {
+            $os = 'Windows 10';
+        } elseif (stripos($ua, 'Windows NT 11') !== false) {
+            $os = 'Windows 11';
+        } elseif (stripos($ua, 'Mac OS X') !== false) {
+            $os = 'macOS';
+        } elseif (stripos($ua, 'Android') !== false) {
+            $os = 'Android';
+        } elseif (stripos($ua, 'iPhone') !== false) {
+            $os = 'iOS';
+        }
+
+        return "{$browser} · {$os}";
+    }
+
+    private static function generateVerificationCode(): string
+    {
+        $letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $digits = '0123456789';
+
+        $chars = [];
+
+        for ($i = 0; $i < 3; $i++) {
+            $chars[] = $letters[random_int(0, strlen($letters) - 1)];
+        }
+
+        for ($i = 0; $i < 3; $i++) {
+            $chars[] = $digits[random_int(0, strlen($digits) - 1)];
+        }
+
+        shuffle($chars);
+
+        return implode('', $chars);
     }
 
     public function showVerifyForm(Request $request)
@@ -116,7 +218,6 @@ class AdminWebAuthController extends Controller
                 ->withInput(['code' => $request->code]);
         }
 
-        // Kode benar
         session()->forget('admin_pending_verification_code');
 
         session(['admin_user' => [
