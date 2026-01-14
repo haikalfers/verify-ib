@@ -579,7 +579,9 @@ class AdminCertificateController extends Controller
 
         $perPage = 10; // harus sama dengan paginate(10) di index()
 
-        $query = DB::table('certificates')->orderByDesc('id');
+        $query = DB::table('certificates')
+            ->whereNull('deleted_at')
+            ->orderByDesc('id');
 
         if ($search = $request->input('q')) {
             $query->where(function ($q) use ($search) {
@@ -587,8 +589,13 @@ class AdminCertificateController extends Controller
                   ->orWhere('certificate_title', 'like', "%{$search}%")
                   ->orWhere('category', 'like', "%{$search}%")
                   ->orWhere('certificate_number', 'like', "%{$search}%")
-                  ->orWhere('verify_code', 'like', "%{$search}%");
+                  ->orWhere('verify_code', 'like', "%{$search}%")
+                  ->orWhere('company_name', 'like', "%{$search}%");
             });
+        }
+
+        if ($categoryFilter = $request->input('category')) {
+            $query->where('category', $categoryFilter);
         }
 
         $certificates = $query->forPage($page, $perPage)->get();
@@ -596,6 +603,7 @@ class AdminCertificateController extends Controller
         if ($certificates->isEmpty()) {
             return redirect()->route('admin.certificates.index', [
                 'q'    => $request->input('q'),
+                'category' => $request->input('category'),
                 'page' => $page,
             ])->withErrors(['general' => 'Tidak ada sertifikat di halaman ini untuk didownload.']);
         }
@@ -609,11 +617,13 @@ class AdminCertificateController extends Controller
             if ($zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
                 return redirect()->route('admin.certificates.index', [
                     'q'    => $request->input('q'),
+                    'category' => $request->input('category'),
                     'page' => $page,
                 ])->withErrors(['general' => 'Gagal membuat file ZIP untuk sertifikat.']);
             }
 
             $addedFiles = 0;
+            $zipNames = [];
 
             foreach ($certificates as $certificate) {
                 if (empty($certificate->generated_pdf_path)) {
@@ -644,6 +654,22 @@ class AdminCertificateController extends Controller
                     continue;
                 }
 
+                if (! is_file($fullPath) || ! is_readable($fullPath) || filesize($fullPath) < 10) {
+                    continue;
+                }
+
+                $fh = @fopen($fullPath, 'rb');
+                if ($fh === false) {
+                    continue;
+                }
+
+                $header = @fread($fh, 4);
+                @fclose($fh);
+
+                if ($header !== '%PDF') {
+                    continue;
+                }
+
                 // Samakan format nama file dengan download manual:
                 // nomor-surat-sertifikat-nama.pdf
                 $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'sertifikat');
@@ -654,6 +680,12 @@ class AdminCertificateController extends Controller
                 $safeNumber = preg_replace('/[^a-zA-Z0-9]/', '-', $numberPart);
 
                 $fileNameInZip = $safeNumber . '-sertifikat-' . $safeName . '.pdf';
+
+                if (isset($zipNames[$fileNameInZip])) {
+                    $fileNameInZip = $safeNumber . '-sertifikat-' . $safeName . '-' . ((int) ($certificate->id ?? 0)) . '.pdf';
+                }
+
+                $zipNames[$fileNameInZip] = true;
 
                 $zip->addFile($fullPath, $fileNameInZip);
                 $addedFiles++;
@@ -667,6 +699,7 @@ class AdminCertificateController extends Controller
 
                 return redirect()->route('admin.certificates.index', [
                     'q'    => $request->input('q'),
+                    'category' => $request->input('category'),
                     'page' => $page,
                 ])->withErrors(['general' => 'Tidak ada file sertifikat yang tersedia untuk didownload di halaman ini.']);
             }
@@ -691,6 +724,7 @@ class AdminCertificateController extends Controller
 
             return redirect()->route('admin.certificates.index', [
                 'q'    => $request->input('q'),
+                'category' => $request->input('category'),
                 'page' => $page,
             ])->withErrors(['general' => 'Terjadi kesalahan saat menyiapkan download sertifikat di halaman ini']);
         }
