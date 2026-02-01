@@ -48,6 +48,22 @@
         </div>
       </div>
 
+      @if ($mode === 'create')
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-gray-700 mb-1">Varian Template</label>
+          <select id="variant-select" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500">
+            <option value="">Pilih Varian</option>
+            @foreach (($variants ?? []) as $v)
+              <option value="{{ $v->id }}" data-template="{{ $v->template_id }}" @selected(old('variant_id') == $v->id)>{{ $v->variant_name }}</option>
+            @endforeach
+          </select>
+          <input type="hidden" name="variant_id" id="variant-id-input" value="{{ old('variant_id') }}">
+          <p class="mt-1 text-[11px] text-gray-500">Opsional. Jika dikosongkan, sistem memakai varian default dari template.</p>
+        </div>
+      </div>
+      @endif
+
       <div class="grid md:grid-cols-2 gap-4">
         <div>
           <label class="block text-xs font-medium text-gray-700 mb-1">Nama Lengkap *</label>
@@ -137,6 +153,9 @@
       const CATEGORY_UPSKILL = 'Sertifikat Upskilling Reskilling';
 
       const categorySelect = document.querySelector('select[name="category"]');
+      const templateSelect = document.querySelector('select[name="template_id"]');
+      const variantSelect = document.getElementById('variant-select');
+      const variantInput = document.getElementById('variant-id-input');
       const periodContainer = document.getElementById('internship-period-fields');
       const startInput = document.querySelector('input[name="internship_start_date"]');
       const endInput = document.querySelector('input[name="internship_end_date"]');
@@ -162,6 +181,36 @@
         const month = bulanIndo[d.getMonth()] || '';
         const year = d.getFullYear();
         return month ? `${day} ${month} ${year}` : '';
+      }
+
+      function filterVariantsByTemplate() {
+        if (!templateSelect || !variantSelect || !variantInput) return;
+        const tplId = templateSelect.value || '';
+        let firstVisible = '';
+        Array.from(variantSelect.options).forEach(opt => {
+          const t = opt.getAttribute('data-template');
+          if (!t) return; // skip placeholder
+          const visible = (tplId && t === tplId);
+          opt.hidden = !visible;
+          if (visible && !firstVisible) firstVisible = opt.value;
+        });
+
+        // Reset selection if current not in filtered set
+        const current = variantSelect.value;
+        if (!current || variantSelect.querySelector(`option[value="${current}"]`)?.hidden) {
+          variantSelect.value = '';
+          variantInput.value = '';
+        }
+      }
+
+      if (templateSelect && variantSelect && variantInput) {
+        filterVariantsByTemplate();
+        templateSelect.addEventListener('change', function() {
+          filterVariantsByTemplate();
+        });
+        variantSelect.addEventListener('change', function() {
+          variantInput.value = variantSelect.value || '';
+        });
       }
 
       function updateVisibility() {

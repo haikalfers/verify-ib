@@ -265,6 +265,7 @@ class CertificateController extends Controller
                 'pdf_url',
                 'company_name',
                 'template_id',
+                'variant_id',
             ]);
 
             $companyNameTrim = preg_replace('/\s+/', ' ', (string) ($data['company_name'] ?? ''));
@@ -298,11 +299,12 @@ class CertificateController extends Controller
                 'verify_code'       => $verifyCode,
                 'company_name'      => $companyNameTrim,
                 'template_id'       => $data['template_id'] ?? null,
+                'variant_id'        => $data['variant_id'] ?? null,
             ]);
 
             $certificate = DB::table('certificates')->where('id', $id)->first();
 
-            // Generate PDF if template_id is provided and template is active
+            // Generate PDF using variant if available, otherwise default variant for the template
             if (!empty($certificate->template_id)) {
                 $template = DB::table('certificate_templates')
                     ->where('id', $certificate->template_id)
@@ -310,9 +312,32 @@ class CertificateController extends Controller
                     ->first();
 
                 if ($template) {
-                    $templateArray = (array) $template;
-                    $certificateArray = (array) $certificate;
+                    $variant = null;
+                    if (!empty($certificate->variant_id)) {
+                        $variant = DB::table('certificate_template_variants')
+                            ->where('id', $certificate->variant_id)
+                            ->where('is_active', 1)
+                            ->first();
+                    }
 
+                    if (!$variant) {
+                        $variant = DB::table('certificate_template_variants')
+                            ->where('template_id', $template->id)
+                            ->where('is_active', 1)
+                            ->orderByDesc('is_default')
+                            ->orderBy('id', 'asc')
+                            ->first();
+                    }
+
+                    $templateArray = (array) $template;
+                    if ($variant) {
+                        // Override effective assets with variant data
+                        $templateArray['file_path'] = $variant->file_path ?? $template->file_path;
+                        $templateArray['file_type'] = $variant->file_type ?? $template->file_type;
+                        $templateArray['coordinates'] = $variant->coordinates ?? $template->coordinates;
+                    }
+
+                    $certificateArray = (array) $certificate;
                     $pdfService = new CertificatePdfService();
                     $relativePath = $pdfService->generate($templateArray, $certificateArray);
 

@@ -2,11 +2,16 @@
 
 @section('content')
   <div class="space-y-4 md:space-y-6 max-w-3xl">
-    <div>
-      <h1 class="text-lg md:text-2xl font-bold text-gray-900">
-        {{ $mode === 'create' ? 'Tambah Template Sertifikat' : 'Edit Template Sertifikat' }}
-      </h1>
-      <p class="text-xs md:text-sm text-gray-600">Upload atau perbarui template sertifikat yang akan digunakan untuk generate PDF.</p>
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <h1 class="text-lg md:text-2xl font-bold text-gray-900">
+          {{ $mode === 'create' ? 'Tambah Template Sertifikat' : 'Edit Template Sertifikat' }}
+        </h1>
+        <p class="text-xs md:text-sm text-gray-600">Upload atau perbarui template sertifikat yang akan digunakan untuk generate PDF.</p>
+      </div>
+      @if ($mode === 'edit')
+        <a href="{{ route('admin.templates.variants', $template->id) }}" class="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 text-xs md:text-sm text-gray-700 hover:bg-gray-100">Kelola Varian</a>
+      @endif
     </div>
 
     <form method="POST" action="{{ $mode === 'create' ? route('admin.templates.store') : route('admin.templates.update', $template->id) }}" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-5 space-y-4">

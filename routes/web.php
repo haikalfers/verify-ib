@@ -61,6 +61,15 @@ Route::middleware([\App\Http\Middleware\AdminWebMiddleware::class])->group(funct
     Route::delete('/admin/templates/{id}', [AdminTemplateController::class, 'destroy'])->name('admin.templates.destroy');
     Route::post('/admin/templates/{id}/toggle', [AdminTemplateController::class, 'toggle'])->name('admin.templates.toggle');
 
+    // Kelola Varian Template
+    Route::get('/admin/templates/{id}/variants', [AdminTemplateController::class, 'variants'])->name('admin.templates.variants');
+    Route::post('/admin/templates/{id}/variants', [AdminTemplateController::class, 'storeVariant'])->name('admin.templates.variants.store');
+    Route::post('/admin/templates/variants/{variantId}/toggle', [AdminTemplateController::class, 'toggleVariant'])->name('admin.templates.variants.toggle');
+    Route::post('/admin/templates/variants/{variantId}/default', [AdminTemplateController::class, 'setDefaultVariant'])->name('admin.templates.variants.default');
+    Route::get('/admin/templates/variants/{variantId}/edit', [AdminTemplateController::class, 'editVariant'])->name('admin.templates.variants.edit');
+    Route::post('/admin/templates/variants/{variantId}/update', [AdminTemplateController::class, 'updateVariant'])->name('admin.templates.variants.update');
+    Route::delete('/admin/templates/variants/{variantId}', [AdminTemplateController::class, 'destroyVariant'])->name('admin.templates.variants.destroy');
+
     // Laporan
     Route::get('/admin/reports', [AdminReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/admin/reports/export', [AdminReportController::class, 'exportCsv'])->name('admin.reports.export');

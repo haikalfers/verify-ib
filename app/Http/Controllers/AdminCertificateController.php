@@ -233,11 +233,17 @@ class AdminCertificateController extends Controller
             ->orderBy('name', 'asc')
             ->get();
 
+        $variants = DB::table('certificate_template_variants')
+            ->where('is_active', 1)
+            ->orderBy('variant_name', 'asc')
+            ->get();
+
         return view('admin.certificates.form', [
             'mode' => 'create',
             'certificate' => null,
             'categories' => $categories,
             'templates' => $templates,
+            'variants' => $variants,
         ]);
     }
 
@@ -246,6 +252,7 @@ class AdminCertificateController extends Controller
         $data = $request->validate([
             'company_name'     => ['required', 'string', 'max:255'],
             'template_id'      => ['required', 'integer', 'exists:certificate_templates,id'],
+            'variant_id'       => ['nullable', 'integer', 'exists:certificate_template_variants,id'],
             'name'             => ['required', 'string', 'max:255'],
             'place_of_birth'   => ['required', 'string', 'max:255'],
             'date_of_birth'    => ['required', 'date'],
@@ -289,6 +296,7 @@ class AdminCertificateController extends Controller
                 'pdf_url'          => null,
                 'company_name'     => $data['company_name'],
                 'template_id'      => $data['template_id'],
+                'variant_id'       => $data['variant_id'] ?? null,
             ];
 
             // Reuse the same logic as API to insert and generate PDF
@@ -338,6 +346,7 @@ class AdminCertificateController extends Controller
             'certificate' => $certificate,
             'categories' => $categories,
             'templates' => $templates,
+            'variants' => DB::table('certificate_template_variants')->where('is_active', 1)->orderBy('variant_name','asc')->get(),
         ]);
     }
 
