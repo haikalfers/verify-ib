@@ -253,7 +253,9 @@ class AdminCertificateController extends Controller
             'competency_field' => ['nullable', 'string', 'max:255'],
             'place_of_issue'   => ['required', 'string', 'max:255'],
             'issued_date'      => ['required', 'date'],
-            'certificate_title'=> ['required', 'string', 'max:255'],
+            // Untuk kategori selain Upskilling Reskilling, judul sertifikat tetap wajib.
+            // Untuk "Sertifikat Upskilling Reskilling" kolom ini boleh kosong.
+            'certificate_title'=> ['required_unless:category,Sertifikat Upskilling Reskilling', 'nullable', 'string', 'max:255'],
             'internship_start_date' => ['nullable', 'date'],
             'internship_end_date'   => ['nullable', 'date'],
         ]);
@@ -266,6 +268,11 @@ class AdminCertificateController extends Controller
                     $data['internship_start_date'],
                     $data['internship_end_date']
                 );
+            }
+
+            // Untuk kategori Upskilling Reskilling, pastikan certificate_title tidak null
+            if (trim($categoryName) === 'Sertifikat Upskilling Reskilling' && empty($data['certificate_title'])) {
+                $data['certificate_title'] = '';
             }
 
             $apiController = new CertificateController();

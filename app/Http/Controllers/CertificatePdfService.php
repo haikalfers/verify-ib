@@ -51,8 +51,40 @@ class CertificatePdfService
                 define('FPDF_FONTPATH', base_path('vendor/setasign/fpdf/font/'));
             }
 
+            // Coordinates: try from template JSON, else use simple defaults (A4, unit mm)
+            $coords = [];
+            if (!empty($template['coordinates'])) {
+                $decoded = json_decode($template['coordinates'], true);
+                if (is_array($decoded)) {
+                    $coords = $decoded;
+                }
+            }
+
+            $pageW = 210.0;
+            $pageH = 297.0;
+            $orientation = 'P';
+
+            if (!empty($coords['_page']) && is_array($coords['_page'])) {
+                $pageConf = $coords['_page'];
+                $w = $pageConf['width'] ?? null;
+                $h = $pageConf['height'] ?? null;
+                $ori = $pageConf['orientation'] ?? null;
+
+                if (is_numeric($w) && is_numeric($h) && (float) $w > 0 && (float) $h > 0) {
+                    $pageW = (float) $w;
+                    $pageH = (float) $h;
+                }
+
+                if (is_string($ori) && ($ori === 'L' || $ori === 'P')) {
+                    $orientation = $ori;
+                } else {
+                    $orientation = $pageW > $pageH ? 'L' : 'P';
+                }
+            } else {
+                $orientation = $pageW > $pageH ? 'L' : 'P';
+            }
+
             $pdf = new Fpdi();
-            $pdf->AddPage();
 
             $pdf->AddFont('GeoSlab703', '', 'GeoSlab703-MdCnBT.php');
             $pdf->AddFont('GeoSlab703', 'B', 'GeoSlab703-MdCnBT-Bold.php');
@@ -64,14 +96,21 @@ class CertificatePdfService
                     // Import first page of PDF as background
                     $pdf->setSourceFile($templatePath);
                     $tplId = $pdf->importPage(1);
-                    $pdf->useTemplate($tplId, 0, 0, 0, 0, true);
+                    $tplSize = $pdf->getTemplateSize($tplId);
+
+                    $pdf->AddPage($tplSize['orientation'] ?? 'P', [$tplSize['width'], $tplSize['height']]);
+                    $pdf->useTemplate($tplId, 0, 0, $tplSize['width'], $tplSize['height'], true);
                 } else {
                     // Treat as image (png/jpg/jpeg) and draw full-page background
-                    // A4 size in mm: 210 x 297
-                    $pdf->Image($templatePath, 0, 0, 210, 297);
+                    $pdf->AddPage($orientation, [$pageW, $pageH]);
+                    $pdf->Image($templatePath, 0, 0, $pageW, $pageH);
                 }
             } catch (\Throwable $bgError) {
                 // If background fails, log but continue to draw text on blank page
+                if ($pdf->PageNo() < 1) {
+                    $pdf->AddPage($orientation, [$pageW, $pageH]);
+                }
+
                 Log::error('Failed to apply template background for certificate PDF', [
                     'error' => $bgError->getMessage(),
                     'file_type' => $fileType,
@@ -82,15 +121,6 @@ class CertificatePdfService
             // Default font setup (GeoSlab703 as primary font)
             $pdf->SetFont('GeoSlab703', '', 12);
             $pdf->SetTextColor(0, 0, 0);
-
-            // Coordinates: try from template JSON, else use simple defaults (A4, unit mm)
-            $coords = [];
-            if (!empty($template['coordinates'])) {
-                $decoded = json_decode($template['coordinates'], true);
-                if (is_array($decoded)) {
-                    $coords = $decoded;
-                }
-            }
 
             // Defaults approximated from Node pdfGenerator.js (A4, pdf-lib points -> mm)
             // These match visual layout used sebelumnya.

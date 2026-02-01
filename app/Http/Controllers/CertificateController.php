@@ -9,6 +9,35 @@ use App\Http\Controllers\CertificatePdfService;
 
 class CertificateController extends Controller
 {
+    protected function normalizeNameForSearch(?string $name): string
+    {
+        $name = preg_replace('/\s+/', ' ', (string) $name);
+        $name = trim($name);
+        if ($name === '') {
+            return '';
+        }
+
+        $base = $name;
+        if (str_contains($base, ',')) {
+            $parts = explode(',', $base);
+            $base = trim((string) ($parts[0] ?? ''));
+        }
+
+        $baseLower = strtolower($base);
+        $baseLower = preg_replace('/[^a-z\s\-\-\]/u', ' ', $baseLower);
+        $baseLower = preg_replace('/\s+/', ' ', $baseLower);
+        $baseLower = trim($baseLower);
+
+        $prefixes = ['dr', 'drg', 'prof', 'ir', 'h', 'hj'];
+        foreach ($prefixes as $p) {
+            if (str_starts_with($baseLower, $p . ' ')) {
+                $baseLower = trim(substr($baseLower, strlen($p) + 1));
+                break;
+            }
+        }
+
+        return $baseLower;
+    }
     /**
      * GET /api/certificates - list all certificates ordered by id desc
      */
@@ -251,9 +280,13 @@ class CertificateController extends Controller
             $verifyCode = $this->generateUniqueVerifyCode();
             $certificateNumber = $this->generateCertificateNumber($companyNameTrim, (string) $data['issued_date']);
 
+            $nameRaw = $data['name'] ?? null;
+            $nameSearch = $this->normalizeNameForSearch(is_string($nameRaw) ? $nameRaw : null);
+
             $id = DB::table('certificates')->insertGetId([
                 'certificate_number' => $certificateNumber,
-                'name'              => $data['name'] ?? null,
+                'name'              => $nameRaw,
+                'name_search'       => $nameSearch !== '' ? $nameSearch : null,
                 'place_of_birth'    => $data['place_of_birth'] ?? null,
                 'date_of_birth'     => $data['date_of_birth'] ?? null,
                 'certificate_title' => $data['certificate_title'] ?? null,
