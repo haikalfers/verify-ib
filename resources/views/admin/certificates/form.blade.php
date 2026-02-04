@@ -9,7 +9,7 @@
       <p class="text-xs md:text-sm text-gray-600">Isi data sertifikat dengan lengkap dan sesuai.</p>
     </div>
 
-    <form method="POST" action="{{ $mode === 'create' ? route('admin.certificates.store') : route('admin.certificates.update', $certificate->id) }}" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-5 space-y-5">
+    <form method="POST" action="{{ $mode === 'create' ? route('admin.certificates.store') : route('admin.certificates.update', $certificate->id) }}" enctype="multipart/form-data" class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 md:p-5 space-y-5">
       @csrf
       @if ($mode === 'edit')
         @method('PUT')
@@ -138,6 +138,14 @@
           <li>Jika template dipilih, PDF akan di-generate dan disimpan otomatis.</li>
         </ul>
       </div>
+
+      @if ($mode === 'create')
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Kompetensi (PDF)</label>
+        <input type="file" name="unit_kompetensi_pdf" accept="application/pdf" class="w-full text-xs md:text-sm">
+        <p class="mt-1 text-[11px] text-gray-500">Opsional. Upload file PDF unit kompetensi yang akan digabung dengan sertifikat (hasil akhirnya 2 lembar dalam 1 file).</p>
+      </div>
+      @endif
 
       <div class="flex items-center justify-between pt-2 gap-2">
         <a href="{{ route('admin.certificates.index') }}" class="inline-flex items-center px-3 py-2 rounded-lg border border-gray-300 text-xs md:text-sm text-gray-700 hover:bg-gray-100">← Kembali</a>

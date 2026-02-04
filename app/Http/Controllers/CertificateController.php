@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 use App\Http\Controllers\CertificatePdfService;
+use setasign\Fpdi\Fpdi;
 
 class CertificateController extends Controller
 {
@@ -266,6 +268,7 @@ class CertificateController extends Controller
                 'company_name',
                 'template_id',
                 'variant_id',
+                'unit_kompetensi',
             ]);
 
             $companyNameTrim = preg_replace('/\s+/', ' ', (string) ($data['company_name'] ?? ''));
@@ -300,6 +303,7 @@ class CertificateController extends Controller
                 'company_name'      => $companyNameTrim,
                 'template_id'       => $data['template_id'] ?? null,
                 'variant_id'        => $data['variant_id'] ?? null,
+                'unit_kompetensi'   => $data['unit_kompetensi'] ?? null,
             ]);
 
             $certificate = DB::table('certificates')->where('id', $id)->first();
@@ -347,6 +351,89 @@ class CertificateController extends Controller
                             ->update(['generated_pdf_path' => $relativePath]);
 
                         $certificate->generated_pdf_path = $relativePath;
+
+                        // Jika ada file unit kompetensi, gabungkan menjadi satu PDF multi-halaman
+                        if (!empty($certificate->unit_kompetensi)) {
+                            try {
+                                $mainRel = ltrim($relativePath, '/');
+                                $unitRel = ltrim($certificate->unit_kompetensi, '/');
+
+                                $mainCandidates = [
+                                    base_path($mainRel),
+                                    public_path($mainRel),
+                                ];
+
+                                $unitCandidates = [
+                                    base_path($unitRel),
+                                    public_path($unitRel),
+                                ];
+
+                                $mainPath = null;
+                                foreach ($mainCandidates as $path) {
+                                    if ($path && File::exists($path)) {
+                                        $mainPath = $path;
+                                        break;
+                                    }
+                                }
+
+                                $unitPath = null;
+                                foreach ($unitCandidates as $path) {
+                                    if ($path && File::exists($path)) {
+                                        $unitPath = $path;
+                                        break;
+                                    }
+                                }
+
+                                if ($mainPath && $unitPath) {
+                                    $fpdi = new Fpdi();
+
+                                    foreach ([$mainPath, $unitPath] as $source) {
+                                        $pageCount = $fpdi->setSourceFile($source);
+                                        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                                            $tplId = $fpdi->importPage($pageNo);
+                                            $size = $fpdi->getTemplateSize($tplId);
+                                            $fpdi->AddPage($size['orientation'] ?? 'P', [$size['width'], $size['height']]);
+                                            $fpdi->useTemplate($tplId, 0, 0, $size['width'], $size['height'], true);
+                                        }
+                                    }
+
+                                    $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'sertifikat');
+                                    $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'sertifikat');
+
+                                    $numberPart = $certificate->certificate_number ?? 'no-number';
+                                    $numberPart = explode('/', (string) $numberPart)[0] ?? $numberPart;
+                                    $safeNumber = preg_replace('/[^a-zA-Z0-9]/', '-', $numberPart);
+
+                                    $timestamp = time();
+                                    $mergedFilename = sprintf('cert-%s-%s-%s-merged.pdf', $safeNumber, $safeName, $timestamp);
+
+                                    $dir = base_path('uploads/certificates');
+                                    if (!File::exists($dir)) {
+                                        File::makeDirectory($dir, 0775, true);
+                                    }
+
+                                    $mergedFullPath = $dir . DIRECTORY_SEPARATOR . $mergedFilename;
+                                    $mergedRelativePath = '/uploads/certificates/' . $mergedFilename;
+
+                                    $fpdi->Output($mergedFullPath, 'F');
+
+                                    DB::table('certificates')
+                                        ->where('id', $certificate->id)
+                                        ->update(['generated_pdf_path' => $mergedRelativePath]);
+
+                                    $certificate->generated_pdf_path = $mergedRelativePath;
+
+                                    if ($mainPath && File::exists($mainPath)) {
+                                        @unlink($mainPath);
+                                    }
+                                }
+                            } catch (\Throwable $mergeError) {
+                                Log::error('Failed to merge certificate and unit_kompetensi PDFs', [
+                                    'certificate_id' => $certificate->id,
+                                    'error' => $mergeError->getMessage(),
+                                ]);
+                            }
+                        }
                     }
                 }
             }

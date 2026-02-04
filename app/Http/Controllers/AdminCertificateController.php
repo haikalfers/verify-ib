@@ -265,6 +265,7 @@ class AdminCertificateController extends Controller
             'certificate_title'=> ['required_unless:category,Sertifikat Upskilling Reskilling', 'nullable', 'string', 'max:255'],
             'internship_start_date' => ['nullable', 'date'],
             'internship_end_date'   => ['nullable', 'date'],
+            'unit_kompetensi_pdf'   => ['nullable', 'file', 'mimes:pdf'],
         ]);
 
         try {
@@ -284,6 +285,25 @@ class AdminCertificateController extends Controller
 
             $apiController = new CertificateController();
 
+            $unitKompetensiPath = null;
+            if ($request->hasFile('unit_kompetensi_pdf')) {
+                $file = $request->file('unit_kompetensi_pdf');
+                if ($file && $file->isValid()) {
+                    $dir = base_path('uploads/certificates/unit-kompetensi');
+                    if (!is_dir($dir)) {
+                        @mkdir($dir, 0775, true);
+                    }
+
+                    $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $data['name']);
+                    $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'unit-kompetensi');
+                    $timestamp = time();
+                    $filename = sprintf('unit-kompetensi-%s-%s.pdf', $safeName, $timestamp);
+
+                    $file->move($dir, $filename);
+                    $unitKompetensiPath = '/uploads/certificates/unit-kompetensi/' . $filename;
+                }
+            }
+
             $payload = [
                 'name'             => $data['name'],
                 'place_of_birth'   => $data['place_of_birth'],
@@ -297,6 +317,7 @@ class AdminCertificateController extends Controller
                 'company_name'     => $data['company_name'],
                 'template_id'      => $data['template_id'],
                 'variant_id'       => $data['variant_id'] ?? null,
+                'unit_kompetensi'  => $unitKompetensiPath,
             ];
 
             // Reuse the same logic as API to insert and generate PDF

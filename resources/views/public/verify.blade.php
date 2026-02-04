@@ -37,6 +37,7 @@
                 type="text"
                 name="verify_code"
                 value="{{ old('verify_code', $input['verify_code'] ?? '') }}"
+                placeholder="Masukkan Kode Verifikasi"
                 class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 required
               >
@@ -47,7 +48,7 @@
                 type="text"
                 name="name"
                 value="{{ old('name', $input['name'] ?? '') }}"
-                placeholder="Masukkan nama lengkap"
+                placeholder="Masukkan nama lengkap tanpa gelar"
                 class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500"
                 required
               >
