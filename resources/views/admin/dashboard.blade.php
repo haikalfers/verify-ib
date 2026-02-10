@@ -51,6 +51,10 @@
             <span class="font-semibold flex items-center gap-2"><span class="text-lg">📄</span>Management Template</span>
             <span class="text-[11px] opacity-90">Kelola template sertifikat</span>
           </a>
+          <a href="{{ route('admin.competency-units.index') }}" class="flex flex-col items-start gap-1 rounded-xl bg-amber-500 hover:bg-amber-600 text-white px-4 py-3 text-left text-sm shadow-sm">
+            <span class="font-semibold flex items-center gap-2"><span class="text-lg">📈</span>Unit Kompetensi</span>
+            <span class="text-[11px] opacity-90">Kelola master unit kompetensi (PDF)</span>
+          </a>
         </div>
       </div>
 

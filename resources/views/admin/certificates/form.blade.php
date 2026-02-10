@@ -141,9 +141,19 @@
 
       @if ($mode === 'create')
       <div>
-        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Kompetensi (PDF)</label>
-        <input type="file" name="unit_kompetensi_pdf" accept="application/pdf" class="w-full text-xs md:text-sm">
-        <p class="mt-1 text-[11px] text-gray-500">Opsional. Upload file PDF unit kompetensi yang akan digabung dengan sertifikat (hasil akhirnya 2 lembar dalam 1 file).</p>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Kompetensi</label>
+        <select name="competency_unit_template_id" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500">
+          <option value="">Tanpa Unit Kompetensi</option>
+          @foreach (($competencyUnits ?? []) as $unit)
+            <option value="{{ $unit->id }}" @selected(old('competency_unit_template_id') == $unit->id)>
+              {{ $unit->name }}
+              @if (!empty($unit->category))
+                ({{ $unit->category }})
+              @endif
+            </option>
+          @endforeach
+        </select>
+        <p class="mt-1 text-[11px] text-gray-500">Opsional. Pilih unit kompetensi yang sudah diupload di master untuk digabungkan ke belakang sertifikat.</p>
       </div>
       @endif
 

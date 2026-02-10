@@ -272,6 +272,48 @@ class CertificatePdfService
                 $drawText($certificate['verify_code'], 'verify_code');
             }
 
+            // If there is a unit_kompetensi PDF, append all its pages after the certificate page
+            if (!empty($certificate['unit_kompetensi'])) {
+                try {
+                    $relativeUnitPath = ltrim($certificate['unit_kompetensi'], '/');
+
+                    $candidates = [];
+                    $candidates[] = base_path($relativeUnitPath);
+                    $candidates[] = public_path($relativeUnitPath);
+
+                    $unitPath = null;
+                    foreach ($candidates as $path) {
+                        if ($path && file_exists($path)) {
+                            $unitPath = $path;
+                            break;
+                        }
+                    }
+
+                    if ($unitPath) {
+                        // Import pages from unit_kompetensi PDF directly into the existing $pdf instance
+                        $pageCount = $pdf->setSourceFile($unitPath);
+
+                        // Selalu ambil hanya halaman pertama dari PDF unit kompetensi
+                        if ($pageCount >= 1) {
+                            $tplId = $pdf->importPage(1);
+                            $tplSize = $pdf->getTemplateSize($tplId);
+
+                            $unitOrientation = $tplSize['orientation'] ?? ($tplSize['width'] > $tplSize['height'] ? 'L' : 'P');
+                            $unitW = $tplSize['width'];
+                            $unitH = $tplSize['height'];
+
+                            $pdf->AddPage($unitOrientation, [$unitW, $unitH]);
+                            $pdf->useTemplate($tplId, 0, 0, $unitW, $unitH, true);
+                        }
+                    }
+                } catch (\Throwable $mergeError) {
+                    Log::error('Failed to append unit_kompetensi PDF to certificate', [
+                        'error' => $mergeError->getMessage(),
+                        'unit_kompetensi' => $certificate['unit_kompetensi'],
+                    ]);
+                }
+            }
+
             // Build safe filename
             $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate['name'] ?? '');
             $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)));

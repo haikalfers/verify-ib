@@ -238,12 +238,18 @@ class AdminCertificateController extends Controller
             ->orderBy('variant_name', 'asc')
             ->get();
 
+        $competencyUnits = DB::table('competency_unit_templates')
+            ->where('is_active', 1)
+            ->orderBy('name', 'asc')
+            ->get();
+
         return view('admin.certificates.form', [
             'mode' => 'create',
             'certificate' => null,
             'categories' => $categories,
             'templates' => $templates,
             'variants' => $variants,
+            'competencyUnits' => $competencyUnits,
         ]);
     }
 
@@ -265,7 +271,7 @@ class AdminCertificateController extends Controller
             'certificate_title'=> ['required_unless:category,Sertifikat Upskilling Reskilling', 'nullable', 'string', 'max:255'],
             'internship_start_date' => ['nullable', 'date'],
             'internship_end_date'   => ['nullable', 'date'],
-            'unit_kompetensi_pdf'   => ['nullable', 'file', 'mimes:pdf'],
+            'competency_unit_template_id' => ['nullable', 'integer', 'exists:competency_unit_templates,id'],
         ]);
 
         try {
@@ -286,21 +292,14 @@ class AdminCertificateController extends Controller
             $apiController = new CertificateController();
 
             $unitKompetensiPath = null;
-            if ($request->hasFile('unit_kompetensi_pdf')) {
-                $file = $request->file('unit_kompetensi_pdf');
-                if ($file && $file->isValid()) {
-                    $dir = base_path('uploads/certificates/unit-kompetensi');
-                    if (!is_dir($dir)) {
-                        @mkdir($dir, 0775, true);
-                    }
+            if (!empty($data['competency_unit_template_id'])) {
+                $unitTpl = DB::table('competency_unit_templates')
+                    ->where('id', $data['competency_unit_template_id'])
+                    ->where('is_active', 1)
+                    ->first();
 
-                    $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $data['name']);
-                    $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'unit-kompetensi');
-                    $timestamp = time();
-                    $filename = sprintf('unit-kompetensi-%s-%s.pdf', $safeName, $timestamp);
-
-                    $file->move($dir, $filename);
-                    $unitKompetensiPath = '/uploads/certificates/unit-kompetensi/' . $filename;
+                if ($unitTpl && !empty($unitTpl->file_path)) {
+                    $unitKompetensiPath = $unitTpl->file_path;
                 }
             }
 

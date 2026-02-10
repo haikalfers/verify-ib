@@ -34,6 +34,11 @@
             <span class="text-lg">📄</span>
             <span>Template Sertifikat</span>
           </a>
+          <a href="{{ route('admin.competency-units.index') }}"
+             class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.competency-units.*') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
+            <span class="text-lg">📚</span>
+            <span>Unit Kompetensi</span>
+          </a>
           <a href="{{ route('admin.reports.index') }}"
              class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-all duration-200 {{ request()->routeIs('admin.reports.*') ? 'bg-red-50 text-red-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-red-500' }}">
             <span class="text-lg">📊</span>

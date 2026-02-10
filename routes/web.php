@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminWebAuthController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\AdminCertificateController;
 use App\Http\Controllers\AdminTemplateController;
+use App\Http\Controllers\AdminCompetencyUnitController;
 use App\Http\Controllers\AdminReportController;
 use App\Http\Controllers\CertificateController;
 
@@ -74,6 +75,14 @@ Route::middleware([\App\Http\Middleware\AdminWebMiddleware::class])->group(funct
     // Laporan
     Route::get('/admin/reports', [AdminReportController::class, 'index'])->name('admin.reports.index');
     Route::get('/admin/reports/export', [AdminReportController::class, 'exportCsv'])->name('admin.reports.export');
+
+    // Unit Kompetensi (master PDF)
+    Route::get('/admin/competency-units', [AdminCompetencyUnitController::class, 'index'])->name('admin.competency-units.index');
+    Route::get('/admin/competency-units/create', [AdminCompetencyUnitController::class, 'create'])->name('admin.competency-units.create');
+    Route::post('/admin/competency-units', [AdminCompetencyUnitController::class, 'store'])->name('admin.competency-units.store');
+    Route::get('/admin/competency-units/{id}/edit', [AdminCompetencyUnitController::class, 'edit'])->name('admin.competency-units.edit');
+    Route::put('/admin/competency-units/{id}', [AdminCompetencyUnitController::class, 'update'])->name('admin.competency-units.update');
+    Route::delete('/admin/competency-units/{id}', [AdminCompetencyUnitController::class, 'destroy'])->name('admin.competency-units.destroy');
     // Route::get('/debug-mail', function () {
     //     return response()->json(config('mail.mailers.smtp'));
     // });
