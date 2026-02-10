@@ -58,10 +58,27 @@
     @endif
 
     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-      <div class="overflow-x-auto">
+      <form method="POST" action="{{ route('admin.certificates.force-delete-bulk') }}" id="bulkDeleteForm">
+        @csrf
+        <div class="flex items-center justify-between px-3 pt-3 pb-2 border-b border-gray-100 text-xs md:text-sm">
+          <div class="text-gray-700">Pilih beberapa sertifikat untuk dihapus permanen.</div>
+          <button
+            type="submit"
+            id="bulkDeleteButton"
+            class="inline-flex items-center px-3 py-1.5 rounded-md border border-red-300 text-red-600 bg-white hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+            onclick="return confirm('Hapus permanen semua sertifikat yang dipilih? Tindakan ini tidak dapat dibatalkan.');"
+            disabled
+          >
+            Hapus Permanen Terpilih
+          </button>
+        </div>
+        <div class="overflow-x-auto">
         <table class="min-w-full text-left text-xs md:text-sm">
           <thead class="bg-gray-50 border-b border-gray-100">
             <tr>
+              <th class="px-3 py-2 font-medium text-gray-600">
+                <input type="checkbox" id="selectAllTrash" class="rounded border-gray-300 text-red-500 focus:ring-red-500">
+              </th>
               <th class="px-3 py-2 font-medium text-gray-600">No</th>
               <th class="px-3 py-2 font-medium text-gray-600">Nama</th>
               <th class="px-3 py-2 font-medium text-gray-600">Judul Sertifikat</th>
@@ -74,6 +91,9 @@
           <tbody>
             @forelse ($certificates as $index => $certificate)
               <tr class="border-t border-gray-100 hover:bg-gray-50/80">
+                <td class="px-3 py-2 align-top text-gray-600">
+                  <input type="checkbox" name="ids[]" value="{{ $certificate->id }}" class="row-checkbox rounded border-gray-300 text-red-500 focus:ring-red-500">
+                </td>
                 <td class="px-3 py-2 align-top text-gray-600">
                   {{ ($certificates->currentPage() - 1) * $certificates->perPage() + $index + 1 }}
                 </td>
@@ -106,7 +126,7 @@
               </tr>
             @empty
               <tr>
-                <td colspan="7" class="px-3 py-6 text-center text-xs md:text-sm text-gray-500">
+                <td colspan="8" class="px-3 py-6 text-center text-xs md:text-sm text-gray-500">
                   Trash kosong.
                 </td>
               </tr>
@@ -169,4 +189,45 @@
       </div>
     </div>
   </div>
+
+  <script>
+    (function () {
+      const form = document.getElementById('bulkDeleteForm');
+      if (!form) return;
+
+      const selectAll = document.getElementById('selectAllTrash');
+      const bulkButton = document.getElementById('bulkDeleteButton');
+      const checkboxes = form.querySelectorAll('.row-checkbox');
+
+      function updateBulkButtonState() {
+        if (!bulkButton) return;
+        const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+        bulkButton.disabled = !anyChecked;
+      }
+
+      if (selectAll) {
+        selectAll.addEventListener('change', function () {
+          const checked = this.checked;
+          checkboxes.forEach(cb => { cb.checked = checked; });
+          updateBulkButtonState();
+        });
+      }
+
+      checkboxes.forEach(cb => {
+        cb.addEventListener('change', function () {
+          if (selectAll) {
+            if (!this.checked) {
+              selectAll.checked = false;
+            } else {
+              const allChecked = Array.from(checkboxes).every(x => x.checked);
+              selectAll.checked = allChecked;
+            }
+          }
+          updateBulkButtonState();
+        });
+      });
+
+      updateBulkButtonState();
+    })();
+  </script>
 @endsection

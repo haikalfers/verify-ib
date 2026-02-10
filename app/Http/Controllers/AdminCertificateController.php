@@ -958,4 +958,57 @@ class AdminCertificateController extends Controller
                 ->withErrors(['general' => 'Terjadi kesalahan saat menghapus permanen sertifikat']);
         }
     }
+
+    public function forceDeleteBulk(Request $request)
+    {
+        try {
+            $ids = $request->input('ids', []);
+
+            if (! is_array($ids) || count($ids) === 0) {
+                return redirect()->route('admin.certificates.trash')
+                    ->withErrors(['general' => 'Tidak ada sertifikat yang dipilih.']);
+            }
+
+            $ids = array_unique(array_map('intval', $ids));
+
+            foreach ($ids as $id) {
+                if (! $id) {
+                    continue;
+                }
+
+                $certificate = DB::table('certificates')->where('id', $id)->first();
+
+                if (! $certificate) {
+                    continue;
+                }
+
+                if (! empty($certificate->trashed_pdf_path)) {
+                    $relativePath = ltrim($certificate->trashed_pdf_path, '/');
+
+                    $candidates = [];
+                    $candidates[] = base_path($relativePath);
+                    $candidates[] = public_path($relativePath);
+
+                    foreach ($candidates as $path) {
+                        if ($path && file_exists($path)) {
+                            @unlink($path);
+                        }
+                    }
+                }
+
+                DB::table('certificates')->where('id', $id)->delete();
+            }
+
+            return redirect()->route('admin.certificates.trash')
+                ->with('status', 'Beberapa sertifikat berhasil dihapus permanen');
+        } catch (\Throwable $e) {
+            Log::error('Admin force delete bulk certificates error', [
+                'ids'   => $request->input('ids', []),
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('admin.certificates.trash')
+                ->withErrors(['general' => 'Terjadi kesalahan saat menghapus permanen sertifikat terpilih']);
+        }
+    }
 }

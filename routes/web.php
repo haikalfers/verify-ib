@@ -51,6 +51,7 @@ Route::middleware([\App\Http\Middleware\AdminWebMiddleware::class])->group(funct
     Route::get('/admin/certificates/trash', [AdminCertificateController::class, 'trash'])->name('admin.certificates.trash');
     Route::post('/admin/certificates/{id}/restore', [AdminCertificateController::class, 'restore'])->name('admin.certificates.restore');
     Route::delete('/admin/certificates/{id}/force-delete', [AdminCertificateController::class, 'forceDelete'])->name('admin.certificates.force-delete');
+    Route::post('/admin/certificates/force-delete-bulk', [AdminCertificateController::class, 'forceDeleteBulk'])->name('admin.certificates.force-delete-bulk');
 
     // Template Sertifikat
     Route::get('/admin/templates', [AdminTemplateController::class, 'index'])->name('admin.templates.index');
