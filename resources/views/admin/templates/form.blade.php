@@ -58,7 +58,11 @@
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-1">File Template {{ $mode === 'create' ? '*' : '' }}</label>
         <input type="file" name="template_file" class="w-full text-xs md:text-sm">
-        <p class="mt-1 text-[11px] text-gray-500">Hanya file PDF atau gambar (PNG, JPG, JPEG) yang diperbolehkan.</p>
+        <p class="mt-1 text-[11px] text-gray-500">Format yang didukung:</p>
+        <div class="mt-0.5 flex flex-wrap gap-1 text-[11px]">
+          <span class="inline-flex items-center rounded-full bg-red-50 px-2 py-0.5 text-red-700 border border-red-200 font-medium">PDF (disarankan)</span>
+          <span class="inline-flex items-center rounded-full bg-gray-50 px-2 py-0.5 text-gray-700 border border-gray-200">Gambar: PNG, JPG, JPEG</span>
+        </div>
         @if ($mode === 'edit' && !empty($template->file_path))
           <p class="mt-1 text-[11px] text-gray-500">File saat ini: <span class="font-mono">{{ $template->file_path }}</span></p>
         @endif

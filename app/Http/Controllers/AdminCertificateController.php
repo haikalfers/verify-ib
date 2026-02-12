@@ -48,7 +48,14 @@ class AdminCertificateController extends Controller
 
     public function importForm()
     {
-        return view('admin.certificates.import');
+        $competencyUnits = DB::table('competency_unit_templates')
+            ->where('is_active', 1)
+            ->orderBy('name', 'asc')
+            ->get();
+
+        return view('admin.certificates.import', [
+            'competencyUnits' => $competencyUnits,
+        ]);
     }
 
     public function importProcess(Request $request)
@@ -94,6 +101,7 @@ class AdminCertificateController extends Controller
             'certificate_title',
             'internship_start_date',
             'internship_end_date',
+            'competency_unit_name', // opsional, untuk memilih Unit Kompetensi berdasarkan nama template
         ];
 
         foreach (['company_name', 'template_name', 'name', 'place_of_birth', 'date_of_birth', 'category', 'place_of_issue', 'issued_date'] as $req) {
@@ -109,6 +117,29 @@ class AdminCertificateController extends Controller
             'failed'  => 0,
             'errors'  => [],
         ];
+
+        // Jika user memilih Unit Kompetensi global dari form import, siapkan sekali di sini
+        $globalUnitKompetensiPath = null;
+        $selectedUnitId = $request->input('competency_unit_template_id');
+
+        if ($selectedUnitId) {
+            $globalUnit = DB::table('competency_unit_templates')
+                ->where('id', (int) $selectedUnitId)
+                ->where('is_active', 1)
+                ->first();
+
+            if (! $globalUnit) {
+                fclose($handle);
+                return back()->withErrors(['file' => 'Unit kompetensi yang dipilih pada form import tidak ditemukan atau tidak aktif'])->withInput();
+            }
+
+            if (empty($globalUnit->file_path)) {
+                fclose($handle);
+                return back()->withErrors(['file' => 'Unit kompetensi yang dipilih pada form import tidak memiliki file PDF yang valid'])->withInput();
+            }
+
+            $globalUnitKompetensiPath = $globalUnit->file_path;
+        }
 
         $line = 1; // sudah baca header
         $apiController = new CertificateController();
@@ -158,6 +189,32 @@ class AdminCertificateController extends Controller
                     );
                 }
 
+                // Default: gunakan Unit Kompetensi global jika diset di form import
+                $unitKompetensiPath = $globalUnitKompetensiPath;
+                $unitName = $assoc['competency_unit_name'] ?? '';
+
+                // Jika kolom competency_unit_name di CSV diisi, override unit global per-baris
+                if ($unitName !== '') {
+                    $unit = DB::table('competency_unit_templates')
+                        ->where('name', $unitName)
+                        ->where('is_active', 1)
+                        ->first();
+
+                    if (! $unit) {
+                        $results['failed']++;
+                        $results['errors'][] = "Baris {$line}: unit kompetensi dengan nama '{$unitName}' tidak ditemukan atau tidak aktif";
+                        continue;
+                    }
+
+                    if (empty($unit->file_path)) {
+                        $results['failed']++;
+                        $results['errors'][] = "Baris {$line}: unit kompetensi '{$unitName}' tidak memiliki file_path yang valid";
+                        continue;
+                    }
+
+                    $unitKompetensiPath = $unit->file_path;
+                }
+
                 $payload = [
                     'company_name'     => $assoc['company_name'] ?? '',
                     'template_id'      => $template->id,
@@ -171,6 +228,7 @@ class AdminCertificateController extends Controller
                     'certificate_title'=> $certificateTitle,
                     'internship_start_date' => $this->normalizeDateInput($assoc['internship_start_date'] ?? null),
                     'internship_end_date'   => $this->normalizeDateInput($assoc['internship_end_date'] ?? null),
+                    'unit_kompetensi'  => $unitKompetensiPath,
                 ];
 
                 $apiRequest = Request::create('/api/certificates', 'POST', $payload);

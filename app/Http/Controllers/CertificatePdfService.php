@@ -233,6 +233,7 @@ class CertificatePdfService
             $drawText($certificate['competency_field'] ?? '', 'competency_field');
             $drawText($certificate['certificate_title'] ?? '', 'certificate_title');
 
+            $issuedPlaceAndDate = null;
             if (!empty($certificate['issued_date'])) {
                 try {
                     $dt = new \DateTime($certificate['issued_date']);
@@ -261,8 +262,8 @@ class CertificatePdfService
                     $formatted = sprintf('%02d %s %s', $day, $namaBulan, $year);
 
                     $place = $certificate['place_of_issue'] ?? null;
-                    $placeAndDate = $place ? ($place . ', ' . $formatted) : $formatted;
-                    $drawText($placeAndDate, 'issued_date');
+                    $issuedPlaceAndDate = $place ? ($place . ', ' . $formatted) : $formatted;
+                    $drawText($issuedPlaceAndDate, 'issued_date');
                 } catch (\Throwable $e) {
                     // ignore date formatting errors
                 }
@@ -304,6 +305,22 @@ class CertificatePdfService
 
                             $pdf->AddPage($unitOrientation, [$unitW, $unitH]);
                             $pdf->useTemplate($tplId, 0, 0, $unitW, $unitH, true);
+
+                            // Tulis tanggal terbit yang sama seperti halaman 1 di bagian bawah tengah halaman unit kompetensi
+                            if ($issuedPlaceAndDate) {
+                                $pdf->SetFont('Arial', '', 11);
+                                $pdf->SetTextColor(0, 0, 0);
+
+                                // Posisi kira-kira mirip contoh: bawah tengah halaman
+                                $xCenter = $unitW / 2.0;
+                                $yPos = $unitH - 35; // sedikit di atas tanda tangan
+
+                                $width = $pdf->GetStringWidth($issuedPlaceAndDate);
+                                $xText = $xCenter - ($width / 2.0);
+
+                                $pdf->SetXY($xText, $yPos);
+                                $pdf->Write(0, $issuedPlaceAndDate);
+                            }
                         }
                     }
                 } catch (\Throwable $mergeError) {

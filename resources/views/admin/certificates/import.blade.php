@@ -44,12 +44,30 @@
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-1">File CSV *</label>
         <input type="file" name="file" accept=".csv,text/csv" class="w-full text-xs md:text-sm">
-        <p class="mt-1 text-[11px] text-gray-500">Format file: CSV dengan header berikut (urutan bebas, nama harus sama):</p>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">Unit Kompetensi</label>
+        <select name="competency_unit_template_id" class="w-full rounded-lg border border-gray-300 bg-gray-50 px-3 py-2.5 text-sm focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-red-500">
+          <option value="">Tanpa Unit Kompetensi</option>
+          @foreach (($competencyUnits ?? []) as $unit)
+            <option value="{{ $unit->id }}" @selected(old('competency_unit_template_id') == $unit->id)>
+              {{ $unit->name }}
+              @if (!empty($unit->category))
+                ({{ $unit->category }})
+              @endif
+            </option>
+          @endforeach
+        </select>
+        <p class="mt-1 text-[11px] text-gray-500">Opsional. Jika diisi, unit kompetensi ini akan digabungkan ke belakang setiap sertifikat hasil import CSV. Masih bisa dioverride per baris dengan kolom <code>competency_unit_name</code> di CSV.</p>
+
+        <p class="mt-3 text-[11px] text-gray-500">Format file: CSV dengan header berikut (urutan bebas, nama harus sama):</p>
         <pre class="mt-1 text-[11px] bg-gray-50 border border-gray-200 rounded px-2 py-1 overflow-x-auto">
-company_name;template_name;name;place_of_birth;date_of_birth;category;competency_field;place_of_issue;issued_date;certificate_title;internship_start_date;internship_end_date
+company_name;template_name;name;place_of_birth;date_of_birth;category;competency_field;place_of_issue;issued_date;certificate_title;internship_start_date;internship_end_date;competency_unit_name
         </pre>
-        <p class="mt-1 text-[11px] text-gray-500">Tanggal gunakan format <code>YYYY-MM-DD</code>. Kolom <code>competency_field</code>, <code>internship_start_date</code>, dan <code>internship_end_date</code> opsional.</p>
+        <p class="mt-1 text-[11px] text-gray-500">Tanggal gunakan format <code>YYYY-MM-DD</code>. Kolom <code>competency_field</code>, <code>internship_start_date</code>, <code>internship_end_date</code>, dan <code>competency_unit_name</code> opsional.</p>
         <p class="mt-1 text-[11px] text-gray-500">Kolom <code>template_name</code> akan dicocokkan dengan nama template aktif di sistem.</p>
+        <p class="mt-1 text-[11px] text-gray-500">Kolom <code>competency_unit_name</code> (jika diisi) akan dicocokkan dengan kolom <code>name</code> pada master <strong>Unit Kompetensi</strong> yang aktif. Jika ditemukan, file PDF unit tersebut akan digabungkan sebagai halaman kedua pada PDF sertifikat.</p>
       </div>
 
       <div class="flex items-center justify-between pt-2 gap-2">
