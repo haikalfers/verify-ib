@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\File;
 
 class AdminCertificateController extends Controller
 {
@@ -442,6 +443,7 @@ class AdminCertificateController extends Controller
             'place_of_issue'   => ['nullable', 'string', 'max:255'],
             'internship_start_date' => ['nullable', 'date'],
             'internship_end_date'   => ['nullable', 'date'],
+            'extra_pdf'        => ['nullable', 'file', 'mimes:pdf'],
         ]);
 
         $categoryName = $data['category'] ?? '';
@@ -480,6 +482,36 @@ class AdminCertificateController extends Controller
                 }
             }
 
+            // Handle file tambahan (extra PDF) jika diupload baru
+            $extraPdfPath = $certificate->extra_pdf_path ?? null;
+
+            if ($request->hasFile('extra_pdf')) {
+                $file = $request->file('extra_pdf');
+                if (!$file->isValid()) {
+                    return back()->withErrors(['extra_pdf' => 'File tambahan tidak valid'])->withInput();
+                }
+
+                $uploadDir = base_path('uploads/certificates-extra');
+                if (!File::exists($uploadDir)) {
+                    File::makeDirectory($uploadDir, 0775, true);
+                }
+
+                // Hapus file tambahan lama jika ada
+                if (!empty($extraPdfPath)) {
+                    $oldPath = base_path(ltrim($extraPdfPath, '/'));
+                    if (File::exists($oldPath)) {
+                        @File::delete($oldPath);
+                    }
+                }
+
+                $safeName = preg_replace('/[^a-zA-Z0-9\s]/', '', $certificate->name ?? 'extra');
+                $safeName = strtolower(preg_replace('/\s+/', '-', trim($safeName)) ?: 'extra');
+                $filename = 'extra-' . $safeName . '-' . time() . '.pdf';
+
+                $file->move($uploadDir, $filename);
+                $extraPdfPath = 'uploads/certificates-extra/' . $filename;
+            }
+
             DB::table('certificates')->where('id', $id)->update([
                 'name'               => $data['name'],
                 'place_of_birth'     => $data['place_of_birth'] ?? null,
@@ -490,6 +522,7 @@ class AdminCertificateController extends Controller
                 'issued_date'        => $data['issued_date'] ?? null,
                 'place_of_issue'     => $data['place_of_issue'] ?? null,
                 'company_name'       => $data['company_name'],
+                'extra_pdf_path'     => $extraPdfPath,
             ]);
 
             $updated = DB::table('certificates')->where('id', $id)->first();

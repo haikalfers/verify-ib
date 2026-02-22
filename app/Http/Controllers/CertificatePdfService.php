@@ -273,7 +273,7 @@ class CertificatePdfService
                 $drawText($certificate['verify_code'], 'verify_code');
             }
 
-            // If there is a unit_kompetensi PDF, append all its pages after the certificate page
+            // If there is a unit_kompetensi PDF, append its first page after the certificate page
             if (!empty($certificate['unit_kompetensi'])) {
                 try {
                     $relativeUnitPath = ltrim($certificate['unit_kompetensi'], '/');
@@ -327,6 +327,46 @@ class CertificatePdfService
                     Log::error('Failed to append unit_kompetensi PDF to certificate', [
                         'error' => $mergeError->getMessage(),
                         'unit_kompetensi' => $certificate['unit_kompetensi'],
+                    ]);
+                }
+            }
+
+            // If there is an extra PDF attached to the certificate, append all its pages after unit_kompetensi (if any)
+            if (!empty($certificate['extra_pdf_path'])) {
+                try {
+                    $relativeExtraPath = ltrim($certificate['extra_pdf_path'], '/');
+
+                    $candidates = [];
+                    $candidates[] = base_path($relativeExtraPath);
+                    $candidates[] = public_path($relativeExtraPath);
+
+                    $extraPath = null;
+                    foreach ($candidates as $path) {
+                        if ($path && file_exists($path)) {
+                            $extraPath = $path;
+                            break;
+                        }
+                    }
+
+                    if ($extraPath) {
+                        $pageCount = $pdf->setSourceFile($extraPath);
+
+                        for ($pageNo = 1; $pageNo <= $pageCount; $pageNo++) {
+                            $tplId = $pdf->importPage($pageNo);
+                            $tplSize = $pdf->getTemplateSize($tplId);
+
+                            $extraOrientation = $tplSize['orientation'] ?? ($tplSize['width'] > $tplSize['height'] ? 'L' : 'P');
+                            $extraW = $tplSize['width'];
+                            $extraH = $tplSize['height'];
+
+                            $pdf->AddPage($extraOrientation, [$extraW, $extraH]);
+                            $pdf->useTemplate($tplId, 0, 0, $extraW, $extraH, true);
+                        }
+                    }
+                } catch (\Throwable $extraError) {
+                    Log::error('Failed to append extra PDF to certificate', [
+                        'error' => $extraError->getMessage(),
+                        'extra_pdf_path' => $certificate['extra_pdf_path'],
                     ]);
                 }
             }

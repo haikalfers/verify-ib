@@ -139,6 +139,17 @@
         </ul>
       </div>
 
+      @if ($mode === 'edit')
+      <div>
+        <label class="block text-xs font-medium text-gray-700 mb-1">File Tambahan (PDF)</label>
+        <input type="file" name="extra_pdf" accept="application/pdf" class="w-full text-xs md:text-sm">
+        <p class="mt-1 text-[11px] text-gray-500">Opsional. Jika diisi, file PDF ini akan ditambahkan sebagai halaman setelah sertifikat (dan setelah Unit Kompetensi jika ada).</p>
+        @if (!empty($certificate->extra_pdf_path))
+          <p class="mt-1 text-[11px] text-gray-500">File tambahan saat ini: <span class="font-mono">{{ $certificate->extra_pdf_path }}</span></p>
+        @endif
+      </div>
+      @endif
+
       @if ($mode === 'create')
       <div>
         <label class="block text-xs font-medium text-gray-700 mb-1">Unit Kompetensi</label>
