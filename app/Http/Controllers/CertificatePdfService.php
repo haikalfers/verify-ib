@@ -311,9 +311,10 @@ class CertificatePdfService
                                 $pdf->SetFont('Arial', '', 11);
                                 $pdf->SetTextColor(0, 0, 0);
 
-                                // Posisi kira-kira mirip contoh: bawah tengah halaman
+                                // Posisi kira-kira mirip contoh: bawah tengah halaman,
+                                // dinaikkan sedikit agar tidak terlalu dekat dengan stempel/tanda tangan
                                 $xCenter = $unitW / 2.0;
-                                $yPos = $unitH - 35; // sedikit di atas tanda tangan
+                                $yPos = $unitH - 70; // sebelumnya -35
 
                                 $width = $pdf->GetStringWidth($issuedPlaceAndDate);
                                 $xText = $xCenter - ($width / 2.0);

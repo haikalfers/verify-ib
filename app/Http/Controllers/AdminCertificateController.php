@@ -527,6 +527,21 @@ class AdminCertificateController extends Controller
 
             $updated = DB::table('certificates')->where('id', $id)->first();
 
+            // Regenerasi nomor sertifikat agar bulan/tahun mengikuti issued_date terbaru
+            if ($updated && !empty($updated->issued_date)) {
+                $api = new CertificateController();
+                $companyNameTrim = preg_replace('/\s+/', ' ', (string) ($updated->company_name ?? ''));
+                $companyNameTrim = trim($companyNameTrim);
+
+                $newNumber = $api->generateCertificateNumber($companyNameTrim, (string) $updated->issued_date);
+
+                DB::table('certificates')
+                    ->where('id', $updated->id)
+                    ->update(['certificate_number' => $newNumber]);
+
+                $updated->certificate_number = $newNumber;
+            }
+
             if ($updated && !empty($updated->template_id)) {
                 $template = DB::table('certificate_templates')
                     ->where('id', $updated->template_id)
